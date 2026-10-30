@@ -1,0 +1,7 @@
+# Use LF line endings in the repository and in every working copy, whatever the operating system.
+* text=auto eol=lf
+
+# Binary assets are stored as is.
+*.png binary
+*.jpg binary
+*.webp binary

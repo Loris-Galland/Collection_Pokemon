@@ -1,0 +1,20 @@
+node_modules/
+*.log
+.DS_Store
+*.tsbuildinfo
+dist/
+kit-pokemon.zip
+
+# Secrets : tous les fichiers d'environnement, sauf le modèle documenté
+.env*
+!.env.example
+.vercel/
+
+# Réglages personnels (outils, éditeur)
+.claude/
+.vscode/
+.idea/
+
+# Documents de travail, pas encore publics
+/CLAUDE.md
+/docs/projets-perso.md
