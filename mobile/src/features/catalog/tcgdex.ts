@@ -1,7 +1,17 @@
 // TCGdex client. Turns API responses into domain types.
 // Docs at https://tcgdex.dev
 
-import type { Card, CardSet, Language, Price, PriceTrend, Variant } from '@collection/shared';
+import {
+  readCardmarketPrices,
+  readCardmarketTrends,
+  type Card,
+  type CardSet,
+  type CardmarketPricing,
+  type Language,
+  type Price,
+  type PriceTrend,
+  type Variant,
+} from '@collection/shared';
 
 const API_URL = 'https://api.tcgdex.net/v2';
 
@@ -42,15 +52,9 @@ interface ApiCard extends ApiCardSummary {
   set: ApiSetSummary;
   variants?: Partial<Record<'normal' | 'reverse' | 'holo' | 'firstEdition', boolean>>;
   pricing?: {
-    cardmarket?: ApiCardmarketPricing | null;
+    cardmarket?: CardmarketPricing | null;
   };
 }
-
-// Cardmarket fields for the base print, and the same fields suffixed with `-holo` for the shiny print.
-type ApiPriceField = 'avg' | 'low' | 'trend' | 'avg1' | 'avg7' | 'avg30';
-type ApiCardmarketPricing = { updated: string } & Partial<
-  Record<ApiPriceField | `${ApiPriceField}-holo`, number | null>
->;
 
 export interface SetWithCards {
   set: CardSet;
@@ -100,59 +104,6 @@ function toVariants(api: ApiCard['variants']): Variant[] {
   return variants.length > 0 ? variants : ['normal'];
 }
 
-/**
- * Cardmarket only gives two prices per card, `avg` for the base print and `avg-holo` for the shiny one. A holo card
- * without a normal print has its price in `avg`. Otherwise holo and reverse both use `avg-holo`.
- */
-function priceSuffix(card: Card, variant: Variant): '' | '-holo' | undefined {
-  switch (variant) {
-    case 'normal':
-      return '';
-    case 'holo':
-      return card.variants.includes('normal') ? '-holo' : '';
-    case 'reverse':
-      return '-holo';
-    default:
-      return undefined;
-  }
-}
-
-/** Reads a Cardmarket field for a variant. Both 0 and null mean there is no data. */
-function readPrice(market: ApiCardmarketPricing, card: Card, variant: Variant, field: ApiPriceField) {
-  const suffix = priceSuffix(card, variant);
-  if (suffix === undefined) return undefined;
-  return market[`${field}${suffix}`] || undefined;
-}
-
-function toPrices(card: Card, api: ApiCard): Price[] {
-  const market = api.pricing?.cardmarket;
-  if (!market) return [];
-  return card.variants.flatMap((variant) => {
-    const amount = readPrice(market, card, variant, 'avg');
-    return amount ? [{ cardId: card.id, variant, amount, currency: 'EUR' as const, updatedAt: market.updated }] : [];
-  });
-}
-
-/** Price trend of each variant that has at least one known average. */
-function toTrends(card: Card, api: ApiCard): PriceTrend[] {
-  const market = api.pricing?.cardmarket;
-  if (!market) return [];
-  return card.variants.flatMap((variant) => {
-    const read = (field: ApiPriceField) => readPrice(market, card, variant, field);
-    const trend: PriceTrend = {
-      cardId: card.id,
-      variant,
-      avg30: read('avg30'),
-      avg7: read('avg7'),
-      avg1: read('avg1'),
-      trend: read('trend'),
-      low: read('low'),
-      updatedAt: market.updated,
-    };
-    return trend.avg30 || trend.avg7 || trend.avg1 ? [trend] : [];
-  });
-}
-
 /** Sets, from newest to oldest. */
 export async function fetchSets(language: Language): Promise<CardSet[]> {
   const sets = await get<ApiSetSummary[]>(language, '/sets');
@@ -191,7 +142,13 @@ export async function fetchCard(language: Language, cardId: string): Promise<Car
     rarity: api.rarity,
     variants: toVariants(api.variants),
   };
-  return { card, set: toCardSet(api.set), prices: toPrices(card, api), trends: toTrends(card, api) };
+  const market = api.pricing?.cardmarket;
+  return {
+    card,
+    set: toCardSet(api.set),
+    prices: readCardmarketPrices(card, market),
+    trends: readCardmarketTrends(card, market),
+  };
 }
 
 /** Maximum number of cards returned by a search. */

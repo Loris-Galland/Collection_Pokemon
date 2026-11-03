@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { priceKey, type CardSet, type Price } from './catalog.ts';
-import { addCopy, setCopyQuantity, type Copy, type CopyInput } from './collection.ts';
+import { addCopy, applyCollectionChange, setCopyQuantity, type Copy, type CopyInput } from './collection.ts';
 import { computeSetProgress } from './progress.ts';
 import { computeCollectionValue } from './value.ts';
 
@@ -19,6 +19,24 @@ const dracaufeuVF: CopyInput = {
 
 let nextId = 0;
 const newId = () => `copy-${++nextId}`;
+
+describe('applyCollectionChange', () => {
+  it('creates a copy with the id carried by the change, then merges into it', () => {
+    const once = applyCollectionChange([], { type: 'add', id: 'chosen', input: dracaufeuVF });
+    const twice = applyCollectionChange(once, { type: 'add', id: 'ignored', input: dracaufeuVF });
+    assert.deepEqual(
+      twice.map((copy) => [copy.id, copy.quantity]),
+      [['chosen', 2]],
+    );
+  });
+
+  it('changes a quantity and removes a copy', () => {
+    const copies = applyCollectionChange([], { type: 'add', id: 'a', input: dracaufeuVF });
+    const raised = applyCollectionChange(copies, { type: 'set-quantity', copyId: 'a', quantity: 3 });
+    assert.equal(raised[0]?.quantity, 3);
+    assert.deepEqual(applyCollectionChange(raised, { type: 'remove', copyId: 'a' }), []);
+  });
+});
 
 describe('addCopy', () => {
   it('merges an identical combination by raising the quantity', () => {

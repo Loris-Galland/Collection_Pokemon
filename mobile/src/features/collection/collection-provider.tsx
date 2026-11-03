@@ -1,68 +1,80 @@
-import {
-  addCopy,
-  countOwnedQuantities,
-  isCopy,
-  removeCopy,
-  setCopyQuantity,
-  type Copy,
-  type CopyInput,
-} from '@collection/shared';
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { countOwnedQuantities, type Copy } from '@collection/shared';
+import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 
 import { createId } from '@/lib/id';
-import { usePersistentState } from '@/lib/storage';
+import { StateView } from '@/ui';
 
-// Prototype only. The collection lives on the phone. It will move to the server (MongoDB) and this local storage will
-// become the offline cache.
-const STORAGE_KEY = 'collection/v1';
+import { createLocalCollectionSource } from './collection-source';
+import {
+  createCollectionStore,
+  type CollectionActions,
+  type CollectionState,
+  type CollectionStatus,
+  type CollectionStore,
+} from './collection-store';
 
-// Keeps the valid copies only, so one corrupted entry does not cost the whole collection.
-const restoreCopies = (value: unknown): Copy[] | undefined => (Array.isArray(value) ? value.filter(isCopy) : undefined);
+const StoreContext = createContext<CollectionStore | null>(null);
 
-interface CollectionActions {
-  add: (input: CopyInput) => void;
-  setQuantity: (copyId: string, quantity: number) => void;
-  remove: (copyId: string) => void;
+function useStore(): CollectionStore {
+  const store = useContext(StoreContext);
+  if (!store) throw new Error('Collection hooks must be used inside <CollectionProvider>');
+  return store;
 }
 
-// Two contexts. The actions never change, so a component that only adds or edits copies is not redrawn whenever the
-// collection changes.
-const CopiesContext = createContext<readonly Copy[] | null>(null);
-const ActionsContext = createContext<CollectionActions | null>(null);
+/** Redraws the component only when the selected part of the state changes. */
+function useSelected<T>(store: CollectionStore, select: (state: CollectionState) => T): T {
+  const read = () => select(store.getState());
+  return useSyncExternalStore(store.subscribe, read, read);
+}
 
-/** Loads the collection on startup and saves it after every change. */
+/** Loads the collection on startup and gives it to the screens. */
 export function CollectionProvider({ children }: { children: ReactNode }) {
-  const [copies, setCopies, loaded] = usePersistentState<Copy[]>(STORAGE_KEY, [], restoreCopies);
+  const [store] = useState(() => createCollectionStore(createLocalCollectionSource(), createId));
+  const status = useSelected(store, (state) => state.status);
 
-  const actions = useMemo<CollectionActions>(
-    () => ({
-      add: (input) => setCopies((current) => addCopy(current, input, createId)),
-      setQuantity: (copyId, quantity) => setCopies((current) => setCopyQuantity(current, copyId, quantity)),
-      remove: (copyId) => setCopies((current) => removeCopy(current, copyId)),
-    }),
-    [setCopies],
-  );
+  useEffect(() => {
+    store.load();
+  }, [store]);
 
-  if (!loaded) return null;
-  return (
-    <ActionsContext.Provider value={actions}>
-      <CopiesContext.Provider value={copies}>{children}</CopiesContext.Provider>
-    </ActionsContext.Provider>
-  );
+  if (status === 'loading') return null;
+  if (status === 'unavailable') {
+    return (
+      <StateView
+        title="Collection indisponible"
+        message="Ta collection n’a pas pu être chargée. Vérifie ta connexion, puis réessaie."
+        actionLabel="Réessayer"
+        onAction={store.load}
+      />
+    );
+  }
+  return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }
 
-/** The copies in the collection. */
+/** The copies in the collection, as shown on screen. */
 export function useCopies(): readonly Copy[] {
-  const copies = useContext(CopiesContext);
-  if (!copies) throw new Error('useCopies must be used inside <CollectionProvider>');
-  return copies;
+  return useSelected(useStore(), (state) => state.copies);
+}
+
+/** The copies the source has confirmed. A rule that must not act on a change that may be undone reads these. */
+export function useSavedCopies(): readonly Copy[] {
+  return useSelected(useStore(), (state) => state.savedCopies);
+}
+
+/** Whether the collection can be changed. */
+export function useCollectionStatus(): CollectionStatus {
+  return useSelected(useStore(), (state) => state.status);
+}
+
+/** Whether the last change could not be saved, and how to clear that message. */
+export function useCollectionSaveError(): { saveFailed: boolean; dismiss: () => void } {
+  const store = useStore();
+  const saveFailed = useSelected(store, (state) => state.saveFailed);
+  return { saveFailed, dismiss: store.dismissSaveError };
 }
 
 /** The add, edit and remove actions, stable across renders. */
 export function useCollectionActions(): CollectionActions {
-  const actions = useContext(ActionsContext);
-  if (!actions) throw new Error('useCollectionActions must be used inside <CollectionProvider>');
-  return actions;
+  return useStore();
 }
 
 /** Total owned quantity per card, across every variant, language and condition. */

@@ -37,7 +37,7 @@ The domain vocabulary lives in [`GLOSSARY.md`](./GLOSSARY.md), written in French
 ```bash
 npm install          # installs the three packages from the root
 npm run mobile       # starts Expo, then scan the QR code with Expo Go
-npm test             # runs the domain tests in shared
+npm test             # runs the tests of every package
 npm run typecheck    # type checks every package
 ```
 

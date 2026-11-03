@@ -1,7 +1,7 @@
 import { addWish, isWish, removeObtainedWishes, removeWish, type Wishlist } from '@collection/shared';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
-import { useCopies } from '@/features/collection/collection-provider';
+import { useSavedCopies } from '@/features/collection/collection-provider';
 import { usePersistentState } from '@/lib/storage';
 
 // Like the collection, the wishlist lives on the phone during the prototype.
@@ -28,7 +28,8 @@ const ActionsContext = createContext<WishlistActions | null>(null);
 
 /** Loads the wishlist, saves it, and removes the cards that were added to the collection. */
 export function WishlistProvider({ children }: { children: ReactNode }) {
-  const copies = useCopies();
+  // Saved copies only, so a wish is not lost when adding the copy fails and is undone.
+  const copies = useSavedCopies();
   const [wishlist, setWishlist, loaded] = usePersistentState<Wishlist>(STORAGE_KEY, [], restoreWishlist);
   const [obtainedCardIds, setObtainedCardIds] = useState<ReadonlySet<string>>(new Set());
 

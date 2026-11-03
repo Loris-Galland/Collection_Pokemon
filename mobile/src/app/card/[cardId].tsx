@@ -1,4 +1,4 @@
-import { VARIANT_LABELS, type Variant } from '@collection/shared';
+import { VARIANT_LABELS, sharesShinyPrice } from '@collection/shared';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -7,7 +7,8 @@ import { CardImage } from '@/features/catalog/card-image';
 import { useCard } from '@/features/catalog/hooks';
 import { PriceTrendCard } from '@/features/catalog/price-trend-card';
 import { AddCopyForm } from '@/features/collection/add-copy-form';
-import { useCopies } from '@/features/collection/collection-provider';
+import { CollectionNotice } from '@/features/collection/collection-notice';
+import { useCollectionStatus, useCopies } from '@/features/collection/collection-provider';
 import { CopyRow } from '@/features/collection/copy-row';
 import { WishButton } from '@/features/wishlist/wish-button';
 import { useWishlist } from '@/features/wishlist/wishlist-provider';
@@ -19,6 +20,7 @@ export default function CardScreen() {
   const { cardId } = useLocalSearchParams<{ cardId: string }>();
   const { data, error, retry } = useCard(cardId);
   const copies = useCopies();
+  const readOnly = useCollectionStatus() === 'read-only';
   const { obtainedCardIds } = useWishlist();
 
   if (error) {
@@ -77,13 +79,14 @@ export default function CardScreen() {
               </View>
             );
           })}
-          {/* Same rule as `priceSuffix` in the TCGdex client. When a normal print exists, holo and reverse both read `avg-holo`. */}
-          {['normal', 'holo', 'reverse'].every((variant) => card.variants.includes(variant as Variant)) && (
+          {sharesShinyPrice(card.variants) && (
             <Text variant="caption" tone="faint">
               Cardmarket ne donne qu’un prix pour les versions brillantes : holo et reverse affichent le même.
             </Text>
           )}
         </View>
+
+        <CollectionNotice />
 
         {ownedCopies.length > 0 && (
           <View style={styles.owned}>
@@ -94,10 +97,12 @@ export default function CardScreen() {
           </View>
         )}
 
-        <View style={styles.owned}>
-          <Text variant="title">Ajouter</Text>
-          <AddCopyForm key={card.id} card={card} />
-        </View>
+        {!readOnly && (
+          <View style={styles.owned}>
+            <Text variant="title">Ajouter</Text>
+            <AddCopyForm key={card.id} card={card} />
+          </View>
+        )}
       </ScrollView>
     </>
   );

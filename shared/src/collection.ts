@@ -73,6 +73,27 @@ export function removeCopy(copies: readonly Copy[], copyId: string): Copy[] {
   return copies.filter((copy) => copy.id !== copyId);
 }
 
+/**
+ * A change to the collection. An add carries the id of the copy it may create, so the phone and whoever stores the
+ * collection end up with the same result.
+ */
+export type CollectionChange =
+  | { type: 'add'; id: string; input: CopyInput }
+  | { type: 'set-quantity'; copyId: string; quantity: number }
+  | { type: 'remove'; copyId: string };
+
+/** Applies a change to the collection. */
+export function applyCollectionChange(copies: readonly Copy[], change: CollectionChange): Copy[] {
+  switch (change.type) {
+    case 'add':
+      return addCopy(copies, change.input, () => change.id);
+    case 'set-quantity':
+      return setCopyQuantity(copies, change.copyId, change.quantity);
+    case 'remove':
+      return removeCopy(copies, change.copyId);
+  }
+}
+
 /** Total owned quantity per card, across every variant, language and condition. */
 export function countOwnedQuantities(copies: readonly Copy[]): Map<string, number> {
   const quantities = new Map<string, number>();

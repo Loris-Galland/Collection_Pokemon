@@ -7,17 +7,23 @@ interface StepperProps {
   value: number;
   onChange: (value: number) => void;
   min?: number;
+  disabled?: boolean;
 }
 
 /** Quantity picker with minus and plus buttons. */
-export function Stepper({ value, onChange, min = 0 }: StepperProps) {
+export function Stepper({ value, onChange, min = 0, disabled = false }: StepperProps) {
   return (
     <View style={styles.row}>
-      <StepButton label="−" accessibilityLabel="Diminuer" disabled={value <= min} onPress={() => onChange(value - 1)} />
+      <StepButton
+        label="−"
+        accessibilityLabel="Diminuer"
+        disabled={disabled || value <= min}
+        onPress={() => onChange(value - 1)}
+      />
       <Text variant="heading" style={styles.value}>
         {value}
       </Text>
-      <StepButton label="+" accessibilityLabel="Augmenter" onPress={() => onChange(value + 1)} />
+      <StepButton label="+" accessibilityLabel="Augmenter" disabled={disabled} onPress={() => onChange(value + 1)} />
     </View>
   );
 }

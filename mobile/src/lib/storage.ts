@@ -8,13 +8,14 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 export type Restore<T> = (value: unknown) => T | undefined;
 
 /**
- * Reads a JSON value saved on the phone. A missing or unreadable value gives the fallback, and a partly corrupted one
- * keeps its valid entries, so one bad item never wipes the rest.
+ * Reads a JSON value saved on the phone. A missing or invalid value gives the fallback, and a partly corrupted one keeps
+ * its valid entries, so one bad item never wipes the rest. Rejects when the storage itself cannot be read, because the
+ * caller must not mistake that for an empty value and overwrite what is stored.
  */
 export async function readJson<T>(key: string, fallback: T, restore: Restore<T>): Promise<T> {
+  const raw = await AsyncStorage.getItem(key);
+  if (raw === null) return fallback;
   try {
-    const raw = await AsyncStorage.getItem(key);
-    if (raw === null) return fallback;
     const parsed: unknown = JSON.parse(raw);
     return restore(parsed) ?? fallback;
   } catch {
@@ -22,13 +23,9 @@ export async function readJson<T>(key: string, fallback: T, restore: Restore<T>)
   }
 }
 
-/** Saves a value as JSON on the phone. A failure is reported without crashing the app. */
+/** Saves a value as JSON on the phone. Rejects when it could not be written. */
 export async function writeJson(key: string, value: unknown): Promise<void> {
-  try {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.warn(`Could not save ${key} locally`, error);
-  }
+  await AsyncStorage.setItem(key, JSON.stringify(value));
 }
 
 /** Delay before writing, so several quick taps (on the stepper for example) only cause one write. */
@@ -47,17 +44,21 @@ export function usePersistentState<T>(
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    readJson(key, fallback, restore).then((stored) => {
-      setValue(stored);
-      setLoaded(true);
-    });
+    readJson(key, fallback, restore)
+      .catch(() => fallback)
+      .then((stored) => {
+        setValue(stored);
+        setLoaded(true);
+      });
     // Read once on startup, for this key.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
   useEffect(() => {
     if (!loaded) return;
-    const timer = setTimeout(() => writeJson(key, value), WRITE_DELAY_MS);
+    const timer = setTimeout(() => {
+      writeJson(key, value).catch((error) => console.warn(`Could not save ${key} locally`, error));
+    }, WRITE_DELAY_MS);
     return () => clearTimeout(timer);
   }, [key, value, loaded]);
 

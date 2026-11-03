@@ -1,3 +1,4 @@
+export * from './cardmarket.ts';
 export * from './catalog.ts';
 export * from './collection.ts';
 export * from './progress.ts';
