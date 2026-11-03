@@ -1,7 +1,7 @@
 import { db } from './db.js';
 
-// The app sends a small square picture, so anything much larger did not come from it.
-const MAX_AVATAR_BYTES = 100 * 1024;
+// The app sends a small square picture, so anything larger did not come from it. A free database has 512 MB in all.
+const MAX_AVATAR_BYTES = 30 * 1024;
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
 interface AvatarDocument {

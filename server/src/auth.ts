@@ -4,6 +4,7 @@ import { betterAuth } from 'better-auth';
 import { twoFactor } from 'better-auth/plugins';
 import { ObjectId } from 'mongodb';
 
+import { clearAccountLimits } from './account-limit.js';
 import { deleteAvatar } from './avatar.js';
 import { db, mongoClient } from './db.js';
 import { requireTwoFactorCode } from './two-factor-guard.js';
@@ -43,6 +44,7 @@ export const auth = betterAuth({
         await Promise.all([
           db.collection('twoFactor').deleteMany({ userId: new ObjectId(user.id) }),
           deleteAvatar(user.id),
+          clearAccountLimits(user.id),
         ]);
       },
     },

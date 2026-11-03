@@ -9,15 +9,20 @@ import { avatarUri, removeAvatar, saveAvatar, useAvatarUri } from './avatar';
 import { FormError } from './form-error';
 
 const AVATAR_WIDTH = 256;
+// The server refuses more than 30 KB, which is 40 000 characters in base64. A very detailed picture needs a lower quality.
+const MAX_BASE64_LENGTH = 40_000;
+const QUALITIES = [0.7, 0.5, 0.3];
 const PREPARE_FAILURE = 'Cette photo n’a pas pu être préparée. Essaies-en une autre.';
-const SAVE_FAILURE = 'La photo n’a pas pu être modifiée. Vérifie ta connexion, puis réessaie.';
+const SAVE_FAILURE = 'La photo n’a pas pu être modifiée. Vérifie ta connexion ou patiente un instant, puis réessaie.';
 
 /** Encoding the picture again makes it small, and leaves out its metadata such as the place it was taken. */
 async function shrink(uri: string): Promise<string> {
   const image = await ImageManipulator.manipulate(uri).resize({ width: AVATAR_WIDTH }).renderAsync();
-  const { base64 } = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.7, base64: true });
-  if (!base64) throw new Error('The picture could not be encoded');
-  return base64;
+  for (const compress of QUALITIES) {
+    const { base64 } = await image.saveAsync({ format: SaveFormat.JPEG, compress, base64: true });
+    if (base64 && base64.length <= MAX_BASE64_LENGTH) return base64;
+  }
+  throw new Error('The picture could not be made small enough');
 }
 
 /** Shows the profile picture and lets the user choose one from the phone, check how it looks, and save or remove it. */
