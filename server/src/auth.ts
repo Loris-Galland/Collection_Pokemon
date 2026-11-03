@@ -4,8 +4,8 @@ import { betterAuth } from 'better-auth';
 import { twoFactor } from 'better-auth/plugins';
 import { ObjectId } from 'mongodb';
 
-import { db, mongoClient } from './db.ts';
-import { requireTwoFactorCode } from './two-factor-guard.ts';
+import { db, mongoClient } from './db.js';
+import { requireTwoFactorCode } from './two-factor-guard.js';
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;

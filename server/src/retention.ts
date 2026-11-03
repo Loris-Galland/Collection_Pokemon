@@ -1,4 +1,4 @@
-import { db } from './db.ts';
+import { db } from './db.js';
 
 const RATE_LIMIT_RETENTION_MS = 24 * 60 * 60 * 1000;
 

@@ -1,5 +1,5 @@
-import { isAuthorizedCron } from '../../src/cron-auth.ts';
-import { purgeExpiredRecords } from '../../src/retention.ts';
+import { isAuthorizedCron } from '../../src/cron-auth.js';
+import { purgeExpiredRecords } from '../../src/retention.js';
 
 /** Daily job. Removes expired records. Fetching prices and recording value snapshots are not implemented yet. */
 export async function GET(request: Request): Promise<Response> {

@@ -1,4 +1,4 @@
-import { auth } from '../src/auth.ts';
+import { auth } from '../src/auth.js';
 
 // Every /api/auth/* path is rewritten to this function in vercel.json, and Better Auth reads the original path.
 export function GET(request: Request): Promise<Response> {
