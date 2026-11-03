@@ -26,6 +26,9 @@ const MODES = [
   { value: 'create', label: 'Créer un compte', icon: CreateAccountIcon },
 ] as const;
 
+// Keeps the next field and the button in view as soon as the first field is touched.
+const ROOM_FOR_THE_FORM = 240;
+
 /** Sign in or create an account, with an email and a password or with Google. */
 export default function SignInScreen() {
   const [creating, setCreating] = useState(false);
@@ -60,7 +63,7 @@ export default function SignInScreen() {
   const incomplete = !email.trim() || !password || (creating && (!name.trim() || !acceptedTerms));
 
   return (
-    <KeyboardScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <KeyboardScrollView style={styles.screen} contentContainerStyle={styles.content} roomUnderField={ROOM_FOR_THE_FORM}>
       <View style={styles.heading}>
         <Text variant="display">{creating ? 'Créer un compte' : 'Connexion'}</Text>
         <Text tone="muted">

@@ -35,7 +35,11 @@ export default function SetScreen() {
     setSelectedIds(new Set());
   };
 
-  const startSelecting = () => requireAccount(() => setSelecting(true));
+  const startSelecting = (cardId?: string) =>
+    requireAccount(() => {
+      setSelecting(true);
+      setSelectedIds(new Set(cardId ? [cardId] : []));
+    });
 
   const toggleSelected = (cardId: string) =>
     setSelectedIds((current) => {
@@ -82,7 +86,7 @@ export default function SetScreen() {
               </Text>
             </View>
             <ProgressBar ratio={progress.ratio} />
-            {!readOnly && !selecting && <Button label="Ajouter plusieurs cartes" variant="secondary" onPress={startSelecting} />}
+            {!readOnly && !selecting && <Button label="Ajouter plusieurs cartes" variant="secondary" onPress={() => startSelecting()} />}
           </View>
         }
         renderItem={({ item }) => (
@@ -93,6 +97,7 @@ export default function SetScreen() {
               selecting={selecting}
               selected={selectedIds.has(item.id)}
               onToggleSelected={toggleSelected}
+              onStartSelecting={readOnly ? undefined : startSelecting}
             />
           </View>
         )}

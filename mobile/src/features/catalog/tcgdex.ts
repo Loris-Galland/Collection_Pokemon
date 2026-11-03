@@ -3,6 +3,7 @@
 
 import {
   createSearchIndex,
+  isPocketSet,
   readCardmarketPrices,
   searchIndex,
   readCardmarketTrends,
@@ -30,7 +31,7 @@ function assetUrl(url: string | undefined): string | undefined {
 // A card id is made of the set id and the card number, joined by a hyphen.
 const setIdOf = (cardId: string) => cardId.slice(0, cardId.lastIndexOf('-'));
 
-/** The picture of a card that TCGdex lacks in every language. */
+/** The picture of a card that TCGdex lacks in every language or announces without having. */
 function pokemonTcgImage(cardId: string): string | undefined {
   return POKEMON_TCG_IMAGES[setIdOf(cardId)]?.images[cardId];
 }
@@ -132,7 +133,7 @@ function toCardSet(api: ApiSetSummary & { releaseDate?: string }): CardSet {
   return {
     id: api.id,
     name: api.name,
-    logoUrl: assetUrl(api.logo && `${api.logo}.webp`) ?? POKEMON_TCG_IMAGES[api.id]?.logo,
+    logoUrl: POKEMON_TCG_IMAGES[api.id]?.logo ?? assetUrl(api.logo && `${api.logo}.webp`),
     symbolUrl: assetUrl(api.symbol && `${api.symbol}.webp`),
     releaseDate: api.releaseDate,
     cardCount: { official: api.cardCount.official, total: api.cardCount.total },
@@ -157,7 +158,7 @@ export async function fetchSets(language: Language): Promise<CardSet[]> {
   ]);
   const fallbackById = new Map(fallbacks.map((set) => [set.id, set]));
   return sets
-    .filter((set) => set.cardCount.total > 0)
+    .filter((set) => set.cardCount.total > 0 && !isPocketSet(set.id))
     .map((set) => {
       const fallback = fallbackById.get(set.id);
       return toCardSet({ ...set, logo: set.logo ?? fallback?.logo, symbol: set.symbol ?? fallback?.symbol });
@@ -178,7 +179,7 @@ export async function fetchSet(language: Language, setId: string): Promise<SetWi
       setId: api.id,
       localId: card.localId,
       name: card.name,
-      imageUrl: assetUrl(card.image ?? fallbackImages.get(card.id)) ?? pokemonTcgImage(card.id),
+      imageUrl: pokemonTcgImage(card.id) ?? assetUrl(card.image ?? fallbackImages.get(card.id)),
       // Variant details are only known once the card itself is loaded.
       variants: [],
     })),
@@ -196,7 +197,7 @@ export async function fetchCard(language: Language, cardId: string): Promise<Car
     setId: api.set.id,
     localId: api.localId,
     name: api.name,
-    imageUrl: assetUrl(api.image ?? fallback?.image) ?? pokemonTcgImage(api.id),
+    imageUrl: pokemonTcgImage(api.id) ?? assetUrl(api.image ?? fallback?.image),
     rarity: api.rarity,
     variants: toVariants(api.variants),
   };
@@ -230,7 +231,8 @@ function loadSearchIndex(language: Language): Promise<SearchEntry<ApiCardSummary
     ]).then(([cards, sets]) => {
       const setPosition = new Map(sets.map((set, position) => [set.id, { name: set.name, position }]));
       const positionOf = (card: ApiCardSummary) => setPosition.get(setIdOf(card.id))?.position ?? -1;
-      const newestFirst = [...cards].sort((a, b) => positionOf(b) - positionOf(a));
+      const physical = cards.filter((card) => !isPocketSet(setIdOf(card.id)));
+      const newestFirst = physical.sort((a, b) => positionOf(b) - positionOf(a));
       return createSearchIndex(newestFirst, (card) => ({
         name: card.name,
         localId: card.localId,
@@ -266,7 +268,7 @@ export async function searchCards(language: Language, query: string): Promise<Ca
       setId: setIdOf(card.id),
       localId: card.localId,
       name: card.name,
-      imageUrl: assetUrl(card.image ?? fallbackImages.get(card.id)) ?? pokemonTcgImage(card.id),
+      imageUrl: pokemonTcgImage(card.id) ?? assetUrl(card.image ?? fallbackImages.get(card.id)),
       variants: [],
     })),
   };

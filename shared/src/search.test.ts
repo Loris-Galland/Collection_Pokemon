@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { isPocketSet } from './catalog.ts';
 import { createSearchIndex, normalizeSearchText, searchIndex, type SearchableCard } from './search.ts';
 
 const cards: SearchableCard[] = [
@@ -13,6 +14,16 @@ const cards: SearchableCard[] = [
 ];
 const index = createSearchIndex(cards, (card) => card);
 const names = (query: string) => searchIndex(index, query).map((card) => card.name);
+
+describe('isPocketSet', () => {
+  it('recognizes the TCG Pocket sets', () => {
+    for (const id of ['A1', 'A1a', 'A2b', 'A4a', 'B1', 'B2a', 'P-A']) assert.equal(isPocketSet(id), true, id);
+  });
+
+  it('keeps the physical sets', () => {
+    for (const id of ['base1', 'sv03.5', 'me05', 'tk-ex-p', '2024sv', '30th-c', 'swsh12.5gg']) assert.equal(isPocketSet(id), false, id);
+  });
+});
 
 describe('normalizeSearchText', () => {
   it('ignores case, accents and punctuation', () => {

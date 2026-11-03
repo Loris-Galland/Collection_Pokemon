@@ -13,6 +13,8 @@ interface CardTileProps {
   selecting?: boolean;
   selected?: boolean;
   onToggleSelected?: (cardId: string) => void;
+  /** A long touch starts selecting from this card. */
+  onStartSelecting?: (cardId: string) => void;
 }
 
 /** Card on a set screen, greyed out until it is owned. */
@@ -22,6 +24,7 @@ export function CardTile({
   selecting = false,
   selected = false,
   onToggleSelected,
+  onStartSelecting,
 }: CardTileProps) {
   const owned = ownedQuantity > 0;
   return (
@@ -33,6 +36,7 @@ export function CardTile({
           ? onToggleSelected?.(card.id)
           : router.push({ pathname: '/card/[cardId]', params: { cardId: card.id } })
       }
+      onLongPress={() => !selecting && onStartSelecting?.(card.id)}
       style={({ pressed }) => [styles.tile, pressed && { transform: [{ scale: 0.97 }] }]}>
       <CardImage imageUrl={card.imageUrl} quality="low" label={card.name} dimmed={!owned && !selected} />
       {selected && <View pointerEvents="none" style={styles.selectedFrame} />}

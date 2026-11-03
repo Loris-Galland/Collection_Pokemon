@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { CARD_ASPECT_RATIO, Text, colors, radius } from '@/ui';
@@ -15,9 +16,11 @@ interface CardImageProps {
 /** Card preview, with a placeholder when the image is missing. */
 export function CardImage({ imageUrl, quality, label, dimmed = false }: CardImageProps) {
   const uri = cardImageUrl(imageUrl, quality);
+  // Some addresses lead nowhere, and the name is better than an empty frame.
+  const [failedUri, setFailedUri] = useState<string>();
   return (
     <View style={[styles.frame, dimmed && styles.dimmed]}>
-      {uri ? (
+      {uri && uri !== failedUri ? (
         <Image
           source={{ uri }}
           style={StyleSheet.absoluteFill}
@@ -25,6 +28,7 @@ export function CardImage({ imageUrl, quality, label, dimmed = false }: CardImag
           transition={200}
           cachePolicy="memory-disk"
           recyclingKey={uri}
+          onError={() => setFailedUri(uri)}
           accessibilityLabel={label}
         />
       ) : (

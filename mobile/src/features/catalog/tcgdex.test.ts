@@ -144,16 +144,24 @@ describe('pictures from the bundled table', () => {
     assert.ok(set.logoUrl?.startsWith('https://images.scrydex.com/'));
   });
 
-  it('prefers a TCGdex picture', async () => {
+  it('replaces a logo TCGdex announces without having', async () => {
     mockApi({
-      'en/sets/30th-c': { id: '30th-c', name: 'Classic Collection', logo: `${ASSETS}/en/x/logo`, cardCount, cards: [{ id: '30th-c-001', localId: '001', name: 'Charizard', image: `${ASSETS}/en/x/1` }] },
-      'fr/sets/30th-c': { id: '30th-c', name: 'Collection Classique', cardCount, cards: [] },
+      'fr/sets/me05': { id: 'me05', name: 'Nuit Noire', logo: `${ASSETS}/fr/me/me05/logo`, symbol: `${ASSETS}/univ/me/me05/symbol`, cardCount, cards: [] },
     });
 
-    const { set, cards } = await fetchSet('en', '30th-c');
+    const { set } = await fetchSet('fr', 'me05');
 
-    assert.equal(cards[0].imageUrl, `${ASSETS}/en/x/1`);
-    assert.equal(set.logoUrl, `${ASSETS}/en/x/logo.webp`);
+    assert.equal(set.logoUrl, `${ASSETS}/en/me/me05/logo.webp`);
+  });
+});
+
+describe('TCG Pocket', () => {
+  it('leaves its sets out of the list', async () => {
+    mockApi({ 'en/sets': [{ id: 'A1', name: 'Genetic Apex', cardCount }, { id: 'sv01', name: 'Scarlet', cardCount }] });
+
+    const sets = await fetchSets('en');
+
+    assert.deepEqual(sets.map((set) => set.id), ['sv01']);
   });
 });
 
@@ -174,6 +182,7 @@ const searchCatalog = {
     { id: 'old-1', localId: '1', name: 'Salamèche', image: `${ASSETS}/fr/x/old/1` },
     { id: 'old-2', localId: '2', name: 'Deux' },
     { id: 'new-1', localId: '1', name: 'Salamèche', image: `${ASSETS}/fr/x/new/1` },
+    { id: 'A1-009', localId: '009', name: 'Salamèche', image: `${ASSETS}/fr/tcgp/A1/009` },
   ],
   'fr/sets': [
     { id: 'old', name: 'Ancienne', cardCount },
@@ -192,7 +201,7 @@ const searchCatalog = {
 };
 
 describe('searchCards', () => {
-  it('ignores accents and shows the newest sets first', async () => {
+  it('ignores accents, shows the newest sets first and leaves TCG Pocket out', async () => {
     mockApi(searchCatalog);
 
     const { cards, total } = await searchCards('fr', 'salameche');

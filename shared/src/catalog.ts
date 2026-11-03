@@ -28,6 +28,11 @@ export function isVariant(value: unknown): value is Variant {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(VARIANT_LABELS, value);
 }
 
+/** TCG Pocket is a phone game, so its cards cannot be part of a physical collection. Its set ids look like A1a or P-A. */
+export function isPocketSet(setId: string): boolean {
+  return /^([A-Z]\d+[a-z]?|P-[A-Z])$/.test(setId);
+}
+
 /** Set. Named `CardSet` so it does not shadow the native JavaScript `Set`. */
 export interface CardSet {
   id: string;

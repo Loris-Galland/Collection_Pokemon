@@ -2,7 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { Keyboard, Platform, ScrollView, TextInput, type ScrollViewProps } from 'react-native';
 
 // Leaves the next element visible under the field, usually the button that sends the form.
-const ROOM_UNDER_FIELD = 96;
+const DEFAULT_ROOM_UNDER_FIELD = 96;
+// The focused field itself must stay visible, below the header of the screen.
+const ROOM_ABOVE_FIELD = 96;
 
 const RevealFieldContext = createContext<(() => void) | undefined>(undefined);
 
@@ -11,10 +13,18 @@ export function useRevealField() {
   return useContext(RevealFieldContext);
 }
 
-type KeyboardScrollViewProps = Omit<ScrollViewProps, 'onScroll' | 'scrollEventThrottle' | 'onContentSizeChange'>;
+interface KeyboardScrollViewProps extends Omit<ScrollViewProps, 'onScroll' | 'scrollEventThrottle' | 'onContentSizeChange'> {
+  /** Height to keep visible under the focused field, for a form whose next fields should show too. */
+  roomUnderField?: number;
+}
 
 /** Scrollable screen whose focused text field stays above the keyboard. */
-export function KeyboardScrollView({ contentContainerStyle, children, ...rest }: KeyboardScrollViewProps) {
+export function KeyboardScrollView({
+  contentContainerStyle,
+  children,
+  roomUnderField = DEFAULT_ROOM_UNDER_FIELD,
+  ...rest
+}: KeyboardScrollViewProps) {
   const scrollView = useRef<ComponentRef<typeof ScrollView>>(null);
   const scrollY = useRef(0);
   const keyboardTop = useRef<number | undefined>(undefined);
@@ -24,10 +34,10 @@ export function KeyboardScrollView({ contentContainerStyle, children, ...rest }:
     const top = keyboardTop.current;
     if (top === undefined) return;
     TextInput.State.currentlyFocusedInput()?.measureInWindow((_x, y, _width, height) => {
-      const hidden = y + height + ROOM_UNDER_FIELD - top;
-      if (hidden > 0) scrollView.current?.scrollTo({ y: scrollY.current + hidden, animated: true });
+      const distance = Math.min(y + height + roomUnderField - top, y - ROOM_ABOVE_FIELD);
+      if (distance > 0) scrollView.current?.scrollTo({ y: scrollY.current + distance, animated: true });
     });
-  }, []);
+  }, [roomUnderField]);
 
   useEffect(() => {
     const showing = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (event) => {
