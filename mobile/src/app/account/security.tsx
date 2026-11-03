@@ -1,10 +1,11 @@
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { DeleteAccountSection, TwoFactorSection } from '@/features/account/account-security-sections';
+import { ExportSection, ProfileSection } from '@/features/account/profile-section';
 import { useAccount, useHasPassword } from '@/features/account/use-account';
 import { StateView, colors, spacing } from '@/ui';
 
-/** Security of the account, meaning two-factor authentication and account deletion. */
+/** The account, meaning the profile, the data export, two-factor authentication and deletion. */
 export default function SecurityScreen() {
   const { user } = useAccount();
   const { hasPassword, failed, retry } = useHasPassword();
@@ -25,6 +26,8 @@ export default function SecurityScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ProfileSection user={user} />
+      <ExportSection user={user} />
       <TwoFactorSection hasPassword={hasPassword} enabled={twoFactorEnabled} />
       <DeleteAccountSection userId={user.id} hasPassword={hasPassword} twoFactorEnabled={twoFactorEnabled} />
     </ScrollView>

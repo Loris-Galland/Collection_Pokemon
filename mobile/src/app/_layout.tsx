@@ -47,7 +47,8 @@ export default function RootLayout() {
               <Stack.Screen name="card/[cardId]" options={{ title: '' }} />
               <Stack.Screen name="sign-in" options={{ title: '', presentation: 'modal' }} />
               <Stack.Screen name="two-factor" options={{ title: '', presentation: 'modal' }} />
-              <Stack.Screen name="account/security" options={{ title: 'Sécurité' }} />
+              <Stack.Screen name="account/security" options={{ title: 'Mon compte' }} />
+              <Stack.Screen name="privacy" options={{ title: '' }} />
             </Stack>
           </WishlistProvider>
         </CollectionProvider>

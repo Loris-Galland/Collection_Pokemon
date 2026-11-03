@@ -1,5 +1,6 @@
 export * from './area-chart';
 export * from './button';
+export * from './checkbox';
 export * from './chip';
 export * from './gradient';
 export * from './grid';

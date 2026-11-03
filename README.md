@@ -14,6 +14,7 @@ A mobile app to track a Pokémon card collection. It shows what you own, what is
 - See the value of your collection, its estimated recent trend and the price trend of each card
 - Keep a wishlist of the cards you want, which clears itself as you collect them
 - Create an account with an email and password or with Google, protected by two-factor authentication
+- Read the privacy policy, change your profile, export your data and delete your account from the app
 
 ## Project structure
 

@@ -7,7 +7,7 @@ import { GOOGLE_NOT_COMPLETED_MESSAGE, MIN_PASSWORD_LENGTH } from '@/features/ac
 import { FormError } from '@/features/account/form-error';
 import { leaveAccountScreen } from '@/features/account/use-account';
 import { useAccountRequest } from '@/features/account/use-account-request';
-import { Button, Text, TextField, colors, spacing } from '@/ui';
+import { Button, Checkbox, Text, TextField, colors, spacing } from '@/ui';
 
 /** Sign in or create an account, with an email and a password or with Google. */
 export default function SignInScreen() {
@@ -15,6 +15,7 @@ export default function SignInScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { error, setError, busy, send } = useAccountRequest();
 
   const submit = () =>
@@ -39,7 +40,7 @@ export default function SignInScreen() {
       },
     );
 
-  const incomplete = !email.trim() || !password || (creating && !name.trim());
+  const incomplete = !email.trim() || !password || (creating && (!name.trim() || !acceptedTerms));
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -55,6 +56,11 @@ export default function SignInScreen() {
 
         <Button label="Continuer avec Google" variant="secondary" disabled={busy} onPress={signInWithGoogle} />
 
+        <Text variant="caption" tone="faint">
+          Si c’est ta première connexion avec Google, tu confirmes avoir au moins 15 ans et avoir lu la politique de
+          confidentialité. Google nous transmet ton nom et ton e-mail.
+        </Text>
+
         <View style={styles.separator}>
           <View style={styles.line} />
           <Text variant="caption" tone="faint">
@@ -65,7 +71,7 @@ export default function SignInScreen() {
 
         {creating && (
           <TextField
-            label="Pseudo"
+            label="Pseudo (pas besoin de ton vrai nom)"
             value={name}
             onChangeText={setName}
             autoCapitalize="words"
@@ -95,6 +101,13 @@ export default function SignInScreen() {
             Au moins {MIN_PASSWORD_LENGTH} caractères.
           </Text>
         )}
+        {creating && (
+          <Checkbox
+            label="J’ai au moins 15 ans et j’ai lu la politique de confidentialité."
+            checked={acceptedTerms}
+            onChange={setAcceptedTerms}
+          />
+        )}
 
         <FormError message={error} />
 
@@ -114,6 +127,12 @@ export default function SignInScreen() {
           }}>
           <Text variant="caption" tone="muted">
             {creating ? 'J’ai déjà un compte' : 'Pas encore de compte ? En créer un'}
+          </Text>
+        </Pressable>
+
+        <Pressable accessibilityRole="link" hitSlop={8} style={styles.switch} onPress={() => router.push('/privacy')}>
+          <Text variant="caption" tone="muted">
+            Politique de confidentialité
           </Text>
         </Pressable>
       </ScrollView>

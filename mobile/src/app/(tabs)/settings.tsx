@@ -27,7 +27,7 @@ export default function SettingsScreen() {
                 {user.email}
               </Text>
               <View style={styles.accountActions}>
-                <Button label="Sécurité" variant="secondary" onPress={() => router.push('/account/security')} />
+                <Button label="Mon compte et sécurité" variant="secondary" onPress={() => router.push('/account/security')} />
                 <Button label="Se déconnecter" variant="secondary" onPress={() => authClient.signOut()} />
               </View>
             </>
@@ -50,6 +50,16 @@ export default function SettingsScreen() {
             {LANGUAGES.map((l) => (
               <Chip key={l} label={LANGUAGE_LABELS[l]} selected={l === language} onPress={() => setLanguage(l)} />
             ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text variant="heading">Confidentialité</Text>
+          <Text variant="caption" tone="muted">
+            Ce que l’application enregistre, pourquoi, et tes droits.
+          </Text>
+          <View style={styles.accountActions}>
+            <Button label="Politique de confidentialité" variant="secondary" onPress={() => router.push('/privacy')} />
           </View>
         </View>
 
