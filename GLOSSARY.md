@@ -2,6 +2,20 @@
 
 Application mobile pour suivre sa collection de cartes Pokémon : ce que l'on possède, ce qui manque dans chaque extension, et ce que vaut la collection.
 
+## Le compte
+
+**Compte** :
+Ce qui identifie un utilisateur, avec un e-mail et un mot de passe ou avec Google. Il est demandé pour ajouter un exemplaire ou une envie.
+_À éviter_ : profil, utilisateur (pour l'identifiant de connexion)
+
+**Visiteur** :
+Une personne sans compte. Elle peut parcourir le catalogue, mais pas collectionner.
+_À éviter_ : invité
+
+**A2F** :
+L'authentification à deux facteurs d'un compte à mot de passe : un code temporaire de l'application d'authentification, ou un code de secours. L'appli l'affiche sous le nom « validation en deux étapes ».
+_À éviter_ : 2FA, MFA
+
 ## Le catalogue
 
 **Extension** :

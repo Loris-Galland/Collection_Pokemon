@@ -10,5 +10,12 @@
   "devDependencies": {
     "@types/node": "^24.0.0",
     "typescript": "~6.0.3"
+  },
+  "dependencies": {
+    "@better-auth/expo": "^1.7.15",
+    "@better-auth/mongo-adapter": "^1.7.15",
+    "@better-auth/utils": "^0.5.1",
+    "better-auth": "^1.7.15",
+    "mongodb": "^7.8.0"
   }
 }

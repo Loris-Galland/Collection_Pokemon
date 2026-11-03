@@ -8,4 +8,5 @@ export * from './progress-bar';
 export * from './state-view';
 export * from './stepper';
 export * from './text';
+export * from './text-field';
 export * from './theme';

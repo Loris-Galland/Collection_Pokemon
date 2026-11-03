@@ -8,6 +8,6 @@ Le modèle de données (extension → carte → exemplaire → utilisateur) est 
 
 ## Conséquences
 
-- L'authentification passe par un service séparé (Clerk envisagé, pour son SDK Expo).
+- L'authentification ne vient pas avec la base : voir l'ADR 0002.
 - La tâche quotidienne (récupération des prix, enregistrement de la valeur de la collection) passe par un cron Vercel.
 - Les liens entre documents (exemplaire → carte, exemplaire → utilisateur) se font par identifiant, sans jointures : l'exemplaire stocke l'identifiant de la carte, pas une copie de ses données.

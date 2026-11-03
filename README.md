@@ -13,6 +13,7 @@ A mobile app to track a Pokémon card collection. It shows what you own, what is
 - See every copy you own with its price and condition
 - See the value of your collection, its estimated recent trend and the price trend of each card
 - Keep a wishlist of the cards you want, which clears itself as you collect them
+- Create an account with an email and password or with Google, protected by two-factor authentication
 
 ## Project structure
 
@@ -21,7 +22,7 @@ This is an npm workspaces monorepo with three packages.
 ```
 mobile/   Expo app (React Native, TypeScript, Expo Router)
   src/app/        Screens, one route per file
-  src/features/   Code grouped by feature (catalog, collection, wishlist, settings)
+  src/features/   Code grouped by feature (account, catalog, collection, wishlist, settings)
   src/ui/         Design system tokens and base building blocks
   src/lib/        Shared helpers for formatting, storage and data loading
 server/   Serverless functions on Vercel (TypeScript)
@@ -50,7 +51,13 @@ Set these environment variables in the Vercel project settings, or in `server/.e
 |---|---|
 | `CRON_SECRET` | Authenticates the daily cron job |
 | `MONGODB_URI` | MongoDB Atlas connection string (free tier) |
+| `BETTER_AUTH_SECRET` | Signs sessions, at least 32 random characters |
+| `BETTER_AUTH_URL` | Public address of the server |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign in, optional |
+| `AUTH_EXTRA_ORIGINS` | Extra trusted origins for development, such as Expo Go, comma separated. Remove it before a public release |
+
+The app needs `EXPO_PUBLIC_API_URL`, the address of the server, in `mobile/.env.local`.
 
 ## Status
 
-Working prototype. The catalog, search, collection, wishlist, set progress, collection value and price trends all work. The collection and the wishlist are stored on the phone for now, and accounts and the server come next.
+Working prototype. The catalog, search, collection, wishlist, set progress, collection value and price trends all work. Accounts work through the server. The collection and the wishlist are still stored on the phone, and moving them to the server comes next.

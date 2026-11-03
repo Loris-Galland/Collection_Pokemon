@@ -1,6 +1,8 @@
 import { countOwnedQuantities, type Copy } from '@collection/shared';
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 
+import { adoptLegacyData, collectionKey } from '@/features/account/local-data';
+import { useAccount } from '@/features/account/use-account';
 import { createId } from '@/lib/id';
 import { StateView } from '@/ui';
 
@@ -13,12 +15,22 @@ import {
   type CollectionStore,
 } from './collection-store';
 
-const StoreContext = createContext<CollectionStore | null>(null);
+interface OwnedStore {
+  store: CollectionStore;
+  /** The account the collection belongs to, undefined for a visitor. */
+  ownerId: string | undefined;
+}
+
+const StoreContext = createContext<OwnedStore | null>(null);
+
+function useOwnedStore(): OwnedStore {
+  const owned = useContext(StoreContext);
+  if (!owned) throw new Error('Collection hooks must be used inside <CollectionProvider>');
+  return owned;
+}
 
 function useStore(): CollectionStore {
-  const store = useContext(StoreContext);
-  if (!store) throw new Error('Collection hooks must be used inside <CollectionProvider>');
-  return store;
+  return useOwnedStore().store;
 }
 
 /** Redraws the component only when the selected part of the state changes. */
@@ -27,16 +39,38 @@ function useSelected<T>(store: CollectionStore, select: (state: CollectionState)
   return useSyncExternalStore(store.subscribe, read, read);
 }
 
-/** Loads the collection on startup and gives it to the screens. */
+/**
+ * Gives the screens the collection of the signed in account. The next collection is loaded before it replaces the
+ * current one, so the screens stay mounted and navigation is not lost when someone signs in.
+ */
 export function CollectionProvider({ children }: { children: ReactNode }) {
-  const [store] = useState(() => createCollectionStore(createLocalCollectionSource(), createId));
-  const status = useSelected(store, (state) => state.status);
+  const ownerId = useAccount().user?.id;
+  const [owned, setOwned] = useState<OwnedStore>();
 
   useEffect(() => {
-    store.load();
-  }, [store]);
+    let cancelled = false;
+    const store = createCollectionStore(createLocalCollectionSource(collectionKey(ownerId)), createId);
+    const open = async () => {
+      if (ownerId) await adoptLegacyData(ownerId).catch((error) => console.warn('Could not move old data', error));
+      await store.load();
+      if (!cancelled) setOwned({ store, ownerId });
+    };
+    open();
+    return () => {
+      cancelled = true;
+    };
+  }, [ownerId]);
 
-  if (status === 'loading') return null;
+  if (!owned) return null;
+  return (
+    <StoreContext.Provider value={owned}>
+      <AvailableCollection store={owned.store}>{children}</AvailableCollection>
+    </StoreContext.Provider>
+  );
+}
+
+function AvailableCollection({ store, children }: { store: CollectionStore; children: ReactNode }) {
+  const status = useSelected(store, (state) => state.status);
   if (status === 'unavailable') {
     return (
       <StateView
@@ -47,7 +81,12 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
       />
     );
   }
-  return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
+  return children;
+}
+
+/** The account the current collection belongs to, undefined for a visitor. It changes together with the copies. */
+export function useCollectionOwner(): string | undefined {
+  return useOwnedStore().ownerId;
 }
 
 /** The copies in the collection, as shown on screen. */
@@ -72,7 +111,7 @@ export function useCollectionSaveError(): { saveFailed: boolean; dismiss: () => 
   return { saveFailed, dismiss: store.dismissSaveError };
 }
 
-/** The add, edit and remove actions, stable across renders. */
+/** The add, edit and remove actions, stable until the account changes. */
 export function useCollectionActions(): CollectionActions {
   return useStore();
 }

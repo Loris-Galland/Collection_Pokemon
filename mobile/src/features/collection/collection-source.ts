@@ -14,22 +14,20 @@ export interface CollectionSource {
   apply(change: CollectionChange): Promise<void>;
 }
 
-const STORAGE_KEY = 'collection/v1';
-
 // Keeps the valid copies only, so one corrupted entry does not cost the whole collection.
 const restoreCopies = (value: unknown): Copy[] | undefined => (Array.isArray(value) ? value.filter(isCopy) : undefined);
 
 /** Prototype only. The collection lives on the phone until the server (MongoDB) takes over. */
-export function createLocalCollectionSource(): CollectionSource {
+export function createLocalCollectionSource(storageKey: string): CollectionSource {
   let stored: Copy[] = [];
   return {
     async load() {
-      stored = await readJson<Copy[]>(STORAGE_KEY, [], restoreCopies);
+      stored = await readJson<Copy[]>(storageKey, [], restoreCopies);
       return { copies: stored, readOnly: false };
     },
     async apply(change) {
       const next = applyCollectionChange(stored, change);
-      await writeJson(STORAGE_KEY, next);
+      await writeJson(storageKey, next);
       stored = next;
     },
   };

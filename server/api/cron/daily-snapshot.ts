@@ -1,9 +1,10 @@
 import { isAuthorizedCron } from '../../src/cron-auth.ts';
+import { purgeExpiredRecords } from '../../src/retention.ts';
 
-/** Daily job. Fetches prices, then records a snapshot of each user's collection value. Not implemented yet. */
-export function GET(request: Request): Response {
+/** Daily job. Removes expired records. Fetching prices and recording value snapshots are not implemented yet. */
+export async function GET(request: Request): Promise<Response> {
   if (!isAuthorizedCron(request)) {
     return Response.json({ error: 'unauthorized' }, { status: 401 });
   }
-  return Response.json({ status: 'not-implemented' }, { status: 501 });
+  return Response.json({ purged: await purgeExpiredRecords() });
 }

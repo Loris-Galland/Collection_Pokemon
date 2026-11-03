@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
 
+import { useRequireAccount } from '@/features/account/use-account';
 import { PressableScale, Text, colors, radius, spacing } from '@/ui';
 
 import { useWishlist, useWishlistActions } from './wishlist-provider';
@@ -9,6 +10,7 @@ import { useWishlist, useWishlistActions } from './wishlist-provider';
 export function WishButton({ cardId, setId }: { cardId: string; setId: string }) {
   const { isWished } = useWishlist();
   const { toggle } = useWishlistActions();
+  const requireAccount = useRequireAccount();
   const wished = isWished(cardId);
   const pop = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.get() }] }));
@@ -18,8 +20,14 @@ export function WishButton({ cardId, setId }: { cardId: string; setId: string })
       accessibilityRole="button"
       accessibilityState={{ selected: wished }}
       onPress={() => {
-        if (!wished) pop.set(withSequence(withSpring(1.45, { duration: 160 }), withSpring(1, { damping: 8 })));
-        toggle(cardId, setId);
+        if (wished) {
+          toggle(cardId, setId);
+          return;
+        }
+        requireAccount(() => {
+          pop.set(withSequence(withSpring(1.45, { duration: 160 }), withSpring(1, { damping: 8 })));
+          toggle(cardId, setId);
+        });
       }}
       style={[styles.button, wished && styles.wished]}>
       <Animated.View style={heartStyle}>

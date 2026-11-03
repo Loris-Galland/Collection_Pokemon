@@ -13,6 +13,7 @@ import {
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { useRequireAccount } from '@/features/account/use-account';
 import { useSettings } from '@/features/settings/settings-provider';
 import { Button, Chip, Stepper, Text, colors, radius, spacing } from '@/ui';
 
@@ -21,16 +22,18 @@ import { useCollectionActions } from './collection-provider';
 /** Form to add a copy with its variant, language, condition and quantity. */
 export function AddCopyForm({ card }: { card: Card }) {
   const { add } = useCollectionActions();
+  const requireAccount = useRequireAccount();
   const settings = useSettings();
   const [variant, setVariant] = useState<Variant>(card.variants[0] ?? 'normal');
   const [language, setLanguage] = useState<Language>(settings.language);
   const [condition, setCondition] = useState<Condition>(DEFAULT_CONDITION);
   const [quantity, setQuantity] = useState(1);
 
-  const submit = () => {
-    add({ cardId: card.id, setId: card.setId, variant, language, condition, quantity });
-    setQuantity(1);
-  };
+  const submit = () =>
+    requireAccount(() => {
+      add({ cardId: card.id, setId: card.setId, variant, language, condition, quantity });
+      setQuantity(1);
+    });
 
   return (
     <View style={styles.panel}>

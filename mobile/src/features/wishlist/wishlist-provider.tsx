@@ -1,11 +1,12 @@
 import { addWish, isWish, removeObtainedWishes, removeWish, type Wishlist } from '@collection/shared';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
-import { useSavedCopies } from '@/features/collection/collection-provider';
+import { wishlistKey } from '@/features/account/local-data';
+import { useCollectionOwner, useSavedCopies } from '@/features/collection/collection-provider';
 import { usePersistentState } from '@/lib/storage';
 
-// Like the collection, the wishlist lives on the phone during the prototype.
-const STORAGE_KEY = 'wishlist/v1';
+const NO_WISHES: Wishlist = [];
+const NO_CARDS: ReadonlySet<string> = new Set();
 
 // Keeps the valid wishes only, so one corrupted entry does not cost the whole list.
 const restoreWishlist = (value: unknown): Wishlist | undefined =>
@@ -26,23 +27,27 @@ interface WishlistActions {
 const StateContext = createContext<WishlistState | null>(null);
 const ActionsContext = createContext<WishlistActions | null>(null);
 
-/** Loads the wishlist, saves it, and removes the cards that were added to the collection. */
+/** Loads the wishlist of the account, saves it, and removes the cards that were added to the collection. */
 export function WishlistProvider({ children }: { children: ReactNode }) {
   // Saved copies only, so a wish is not lost when adding the copy fails and is undone.
   const copies = useSavedCopies();
-  const [wishlist, setWishlist, loaded] = usePersistentState<Wishlist>(STORAGE_KEY, [], restoreWishlist);
-  const [obtainedCardIds, setObtainedCardIds] = useState<ReadonlySet<string>>(new Set());
+  // The owner of the collection, not the session, so the copies and the wishes always belong to the same account.
+  const owner = useCollectionOwner();
+  const [wishlist, setWishlist, loaded] = usePersistentState<Wishlist>(wishlistKey(owner), NO_WISHES, restoreWishlist);
+  const [obtainedCardIds, setObtainedCardIds] = useState(NO_CARDS);
 
   // An owned card is no longer a wish. Once the list is loaded, and then whenever the collection changes, obtained
   // cards are removed. This adjusts state during render, as React recommends, instead of using an effect.
-  const [checkedCopies, setCheckedCopies] = useState<readonly unknown[]>();
-  if (loaded && copies !== checkedCopies) {
-    setCheckedCopies(copies);
+  const [checked, setChecked] = useState<{ copies: readonly unknown[]; owner: string | undefined }>();
+  if (loaded && copies !== checked?.copies) {
+    setChecked({ copies, owner });
+    // Announcing only concerns changes made now, not the clean up on startup or after changing account.
+    const announce = checked !== undefined && checked.owner === owner;
+    if (!announce) setObtainedCardIds(NO_CARDS);
     const { wishlist: remaining, obtained } = removeObtainedWishes(wishlist, copies);
     if (obtained.length > 0) {
       setWishlist(remaining);
-      // On startup we clean up silently, because the announcement only concerns the current session.
-      if (checkedCopies) setObtainedCardIds((current) => new Set([...current, ...obtained.map((w) => w.cardId)]));
+      if (announce) setObtainedCardIds((current) => new Set([...current, ...obtained.map((w) => w.cardId)]));
     }
   }
 
@@ -63,7 +68,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     [setWishlist],
   );
 
-  if (!loaded) return null;
   return (
     <ActionsContext.Provider value={actions}>
       <StateContext.Provider value={state}>{children}</StateContext.Provider>
@@ -78,7 +82,7 @@ export function useWishlist(): WishlistState {
   return state;
 }
 
-/** The add or remove wish action, stable across renders. */
+/** The add or remove wish action, stable until the account changes. */
 export function useWishlistActions(): WishlistActions {
   const actions = useContext(ActionsContext);
   if (!actions) throw new Error('useWishlistActions must be used inside <WishlistProvider>');

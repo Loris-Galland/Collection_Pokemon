@@ -1,0 +1,12 @@
+import { db } from './db.ts';
+
+const RATE_LIMIT_RETENTION_MS = 24 * 60 * 60 * 1000;
+
+/** Removes the records holding IP addresses once they are no longer useful. Returns how many were removed. */
+export async function purgeExpiredRecords(now = new Date()): Promise<number> {
+  const [rateLimits, sessions] = await Promise.all([
+    db.collection('rateLimit').deleteMany({ lastRequest: { $lt: now.getTime() - RATE_LIMIT_RETENTION_MS } }),
+    db.collection('session').deleteMany({ expiresAt: { $lt: now } }),
+  ]);
+  return rateLimits.deletedCount + sessions.deletedCount;
+}
