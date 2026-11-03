@@ -17,6 +17,8 @@ export interface CollectionState {
 
 export interface CollectionActions {
   add: (input: CopyInput) => void;
+  /** Adds several copies as one change, so a large selection saves and redraws only once. */
+  addMany: (inputs: readonly CopyInput[]) => void;
   setQuantity: (copyId: string, quantity: number) => void;
   remove: (copyId: string) => void;
 }
@@ -92,6 +94,7 @@ export function createCollectionStore(source: CollectionSource, newId: () => str
       if (state.saveFailed) update({ saveFailed: false });
     },
     add: (input) => change({ type: 'add', id: newId(), input }),
+    addMany: (inputs) => change({ type: 'add-many', entries: inputs.map((input) => ({ id: newId(), input })) }),
     setQuantity: (copyId, quantity) => change({ type: 'set-quantity', copyId, quantity }),
     remove: (copyId) => change({ type: 'remove', copyId }),
   };

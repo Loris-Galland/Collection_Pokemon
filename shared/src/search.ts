@@ -33,12 +33,19 @@ function comparableNumber(number: string): string {
 
 /** Prepares items for repeated searches, since reading thousands of names on each keystroke would be slow. */
 export function createSearchIndex<T>(items: readonly T[], read: (item: T) => SearchableCard): SearchEntry<T>[] {
+  // Thousands of cards share a few set names, so each one is only prepared once.
+  const setWordsByName = new Map<string, readonly string[]>();
   return items.map((item) => {
     const { name, localId, setName } = read(item);
+    let setWords = setWordsByName.get(setName);
+    if (!setWords) {
+      setWords = normalizeSearchText(setName).split(' ');
+      setWordsByName.set(setName, setWords);
+    }
     return {
       item,
       name: normalizeSearchText(name),
-      setWords: normalizeSearchText(setName).split(' '),
+      setWords,
       number: comparableNumber(localId),
     };
   });
@@ -53,14 +60,19 @@ function queryWords(query: string): string[] {
     .filter(Boolean);
 }
 
+interface QueryWord {
+  word: string;
+  number: string;
+}
+
 const NO_MATCH = -1;
 
 /** Lower is better, and `NO_MATCH` means a word of the query is found nowhere. */
-function score<T>(entry: SearchEntry<T>, words: readonly string[], phrase: string): number {
-  for (const word of words) {
+function score<T>(entry: SearchEntry<T>, words: readonly QueryWord[], phrase: string): number {
+  for (const { word, number } of words) {
     const found =
       entry.name.includes(word) ||
-      comparableNumber(word) === entry.number ||
+      number === entry.number ||
       entry.setWords.some((setWord) => setWord.startsWith(word));
     if (!found) return NO_MATCH;
   }
@@ -79,9 +91,10 @@ export function searchIndex<T>(index: readonly SearchEntry<T>[], query: string):
   const words = queryWords(query);
   if (words.length === 0) return [];
   const phrase = words.join(' ');
+  const queryWordList = words.map((word) => ({ word, number: comparableNumber(word) }));
   const matches: { item: T; rank: number }[] = [];
   for (const entry of index) {
-    const rank = score(entry, words, phrase);
+    const rank = score(entry, queryWordList, phrase);
     if (rank !== NO_MATCH) matches.push({ item: entry.item, rank });
   }
   // The sort is stable, so the order of the index decides between equal ranks.

@@ -1,5 +1,6 @@
 import type { Card } from '@collection/shared';
 import { router } from 'expo-router';
+import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text, colors, radius, spacing } from '@/ui';
@@ -18,7 +19,7 @@ interface CardTileProps {
 }
 
 /** Card on a set screen, greyed out until it is owned. */
-export function CardTile({
+export const CardTile = memo(function CardTile({
   card,
   ownedQuantity,
   selecting = false,
@@ -61,7 +62,7 @@ export function CardTile({
       </Text>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   tile: {

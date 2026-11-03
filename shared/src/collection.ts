@@ -90,6 +90,7 @@ export function removeCopy(copies: readonly Copy[], copyId: string): Copy[] {
  */
 export type CollectionChange =
   | { type: 'add'; id: string; input: CopyInput }
+  | { type: 'add-many'; entries: readonly { id: string; input: CopyInput }[] }
   | { type: 'set-quantity'; copyId: string; quantity: number }
   | { type: 'remove'; copyId: string };
 
@@ -98,6 +99,8 @@ export function applyCollectionChange(copies: readonly Copy[], change: Collectio
   switch (change.type) {
     case 'add':
       return addCopy(copies, change.input, () => change.id);
+    case 'add-many':
+      return change.entries.reduce<Copy[]>((result, entry) => addCopy(result, entry.input, () => entry.id), [...copies]);
     case 'set-quantity':
       return setCopyQuantity(copies, change.copyId, change.quantity);
     case 'remove':

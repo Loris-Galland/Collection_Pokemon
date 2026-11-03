@@ -9,6 +9,7 @@ import {
   pickVariant,
   type Card,
   type Condition,
+  type CopyInput,
   type Language,
   type Variant,
 } from '@collection/shared';
@@ -48,13 +49,14 @@ const cardsLabel = (count: number) => `${count} carte${count > 1 ? 's' : ''}`;
 
 /** Bar under a selection of cards, which adds them all at once with one language and a condition for each card. */
 export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: BulkAddPanelProps) {
-  const { add } = useCollectionActions();
+  const { addMany } = useCollectionActions();
   const requireAccount = useRequireAccount();
   const settings = useSettings();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<number>();
+  const busy = progress !== undefined;
   const [preferredVariant, setPreferredVariant] = useState<Variant>('normal');
   const [language, setLanguage] = useState<Language>(settings.language);
   // The condition of most cards, and the ones chosen for a single card.
@@ -75,11 +77,11 @@ export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: Bu
 
   const addAll = () =>
     requireAccount(async () => {
-      setBusy(true);
+      setProgress(0);
       // The variants of a card are only known once the card itself is loaded.
-      const details = await loadCards(settings.language, selected.map((card) => card.id));
+      const details = await loadCards(settings.language, selected.map((card) => card.id), setProgress);
       const failedIds: string[] = [];
-      let addedCount = 0;
+      const inputs: CopyInput[] = [];
       for (const card of selected) {
         const detail = details.get(card.id);
         if (!detail) {
@@ -87,12 +89,12 @@ export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: Bu
           continue;
         }
         const variant = pickVariant(detail.card.variants, preferredVariant);
-        add({ cardId: card.id, setId: card.setId, variant, language, condition: conditionOf(card.id), quantity: 1 });
-        addedCount++;
+        inputs.push({ cardId: card.id, setId: card.setId, variant, language, condition: conditionOf(card.id), quantity: 1 });
       }
-      setBusy(false);
+      addMany(inputs);
+      setProgress(undefined);
       setOpen(false);
-      onDone(addedCount, failedIds);
+      onDone(inputs.length, failedIds);
     });
 
   const count = selected.length;
@@ -145,7 +147,7 @@ export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: Bu
             <Button label="Retour" variant="secondary" disabled={busy} onPress={() => setOpen(false)} />
           </View>
           <View style={styles.primaryAction}>
-            <Button label={busy ? 'Un instant…' : `Ajouter ${cardsLabel(count)}`} disabled={busy} onPress={addAll} />
+            <Button label={busy ? `Un instant… ${progress}/${count}` : `Ajouter ${cardsLabel(count)}`} disabled={busy} onPress={addAll} />
           </View>
         </View>
       ) : (

@@ -219,7 +219,29 @@ export interface CardSearchResult {
   total: number;
 }
 
+const INDEX_SLICE_SIZE = 1500;
+
 const searchIndexes = new Map<Language, Promise<SearchEntry<ApiCardSummary>[]>>();
+
+interface CardToIndex {
+  card: ApiCardSummary;
+  setName: string;
+}
+
+/** Thousands of names take a moment to prepare, so the phone gets to draw between slices and typing stays smooth. */
+async function buildIndexInSlices(cards: readonly CardToIndex[]): Promise<SearchEntry<ApiCardSummary>[]> {
+  const index: SearchEntry<ApiCardSummary>[] = [];
+  for (let start = 0; start < cards.length; start += INDEX_SLICE_SIZE) {
+    const slice = createSearchIndex(cards.slice(start, start + INDEX_SLICE_SIZE), ({ card, setName }) => ({
+      name: card.name,
+      localId: card.localId,
+      setName,
+    }));
+    for (const entry of slice) index.push({ ...entry, item: entry.item.card });
+    await new Promise((resolve) => setTimeout(resolve));
+  }
+  return index;
+}
 
 /** Every card of a language, newest sets first. It is a few megabytes, so it loads once, on the first search. */
 function loadSearchIndex(language: Language): Promise<SearchEntry<ApiCardSummary>[]> {
@@ -230,19 +252,24 @@ function loadSearchIndex(language: Language): Promise<SearchEntry<ApiCardSummary
       get<ApiSetSummary[]>(language, '/sets'),
     ]).then(([cards, sets]) => {
       const setPosition = new Map(sets.map((set, position) => [set.id, { name: set.name, position }]));
-      const positionOf = (card: ApiCardSummary) => setPosition.get(setIdOf(card.id))?.position ?? -1;
-      const physical = cards.filter((card) => !isPocketSet(setIdOf(card.id)));
-      const newestFirst = physical.sort((a, b) => positionOf(b) - positionOf(a));
-      return createSearchIndex(newestFirst, (card) => ({
-        name: card.name,
-        localId: card.localId,
-        setName: setPosition.get(setIdOf(card.id))?.name ?? '',
-      }));
+      const newestFirst = cards
+        .filter((card) => !isPocketSet(setIdOf(card.id)))
+        .map((card) => {
+          const set = setPosition.get(setIdOf(card.id));
+          return { card, setName: set?.name ?? '', position: set?.position ?? -1 };
+        })
+        .sort((a, b) => b.position - a.position);
+      return buildIndexInSlices(newestFirst);
     });
     index.catch(() => searchIndexes.delete(language));
     searchIndexes.set(language, index);
   }
   return index;
+}
+
+/** Starts loading the list of cards ahead of a search. A failure only means the search itself tries again. */
+export function prepareCardSearch(language: Language): void {
+  loadSearchIndex(language).catch(() => undefined);
 }
 
 /** Cards in the catalog language matching the query, also by their name in the other language when nothing else does. */

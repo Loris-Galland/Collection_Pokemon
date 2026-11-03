@@ -59,7 +59,8 @@ export function KeyboardScrollView({
       <ScrollView
         ref={scrollView}
         keyboardShouldPersistTaps="handled"
-        scrollEventThrottle={16}
+        // Only read when the keyboard opens, so it does not need every frame.
+        scrollEventThrottle={100}
         onScroll={(event) => {
           scrollY.current = event.nativeEvent.contentOffset.y;
         }}

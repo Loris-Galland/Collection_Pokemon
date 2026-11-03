@@ -1,15 +1,17 @@
 import type { Card, CardSet } from '@collection/shared';
 import { router } from 'expo-router';
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { PressableScale, Text, colors, radius, spacing } from '@/ui';
+import { Button, PressableScale, Text, colors, radius, spacing } from '@/ui';
 
 import { CardImage } from './card-image';
 import { SEARCH_LIMIT } from './tcgdex';
 
 const COLUMNS = 3;
+// These sit outside the virtualized list, so only a few rows are drawn at first.
+const RESULTS_STEP = 24;
 
 interface CardSearchResultsProps {
   cards: readonly Card[] | undefined;
@@ -34,6 +36,10 @@ export function CardSearchResults({
   ownedQuantities,
   isWished,
 }: CardSearchResultsProps) {
+  const [shownCount, setShownCount] = useState(RESULTS_STEP);
+  useEffect(() => setShownCount(RESULTS_STEP), [cards]);
+  const hasMore = (cards?.length ?? 0) > shownCount;
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -55,7 +61,7 @@ export function CardSearchResults({
         <Text tone="muted">Aucune carte ne porte ce nom.</Text>
       ) : (
         <Animated.View entering={FadeIn.duration(250)} style={styles.grid}>
-          {(cards ?? []).map((card) => (
+          {(cards ?? []).slice(0, shownCount).map((card) => (
             <SearchCardTile
               key={card.id}
               card={card}
@@ -64,7 +70,12 @@ export function CardSearchResults({
               wished={isWished(card.id)}
             />
           ))}
-          {(total ?? 0) > SEARCH_LIMIT && (
+          {hasMore && (
+            <View style={styles.narrow}>
+              <Button label="Afficher plus" variant="secondary" onPress={() => setShownCount(shownCount + RESULTS_STEP)} />
+            </View>
+          )}
+          {!hasMore && (total ?? 0) > SEARCH_LIMIT && (
             <Text variant="caption" tone="muted" style={styles.narrow}>
               Seuls les {SEARCH_LIMIT} premiers s’affichent. Ajoute l’extension ou le numéro pour affiner, par exemple « Pikachu 151 ».
             </Text>

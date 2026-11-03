@@ -1,7 +1,7 @@
 import { computeSetProgress } from '@collection/shared';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { useRequireAccount } from '@/features/account/use-account';
@@ -35,18 +35,29 @@ export default function SetScreen() {
     setSelectedIds(new Set());
   };
 
-  const startSelecting = (cardId?: string) =>
-    requireAccount(() => {
-      setSelecting(true);
-      setSelectedIds(new Set(cardId ? [cardId] : []));
-    });
+  const startSelecting = useCallback(
+    (cardId?: string) =>
+      requireAccount(() => {
+        setSelecting(true);
+        setSelectedIds(new Set(cardId ? [cardId] : []));
+      }),
+    [requireAccount],
+  );
 
-  const toggleSelected = (cardId: string) =>
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (!next.delete(cardId)) next.add(cardId);
-      return next;
-    });
+  const toggleSelected = useCallback(
+    (cardId: string) =>
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        if (!next.delete(cardId)) next.add(cardId);
+        return next;
+      }),
+    [],
+  );
+
+  const selectedCards = useMemo(
+    () => (data?.cards ?? []).filter((card) => selectedIds.has(card.id)),
+    [data, selectedIds],
+  );
 
   if (error) {
     return (
@@ -73,6 +84,9 @@ export default function SetScreen() {
         style={styles.screen}
         contentContainerStyle={[styles.grid, selecting && { paddingBottom: SELECTION_PANEL_ROOM }]}
         extraData={selectedIds}
+        initialNumToRender={4}
+        maxToRenderPerBatch={4}
+        windowSize={5}
         columnWrapperStyle={styles.row}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -104,7 +118,7 @@ export default function SetScreen() {
       />
       {selecting && (
         <BulkAddPanel
-          selected={cards.filter((card) => selectedIds.has(card.id))}
+          selected={selectedCards}
           onCancel={stopSelecting}
           onSelectMissing={() => setSelectedIds(new Set(cards.filter((card) => !owned.has(card.id)).map((card) => card.id)))}
           onDone={(addedCount, failedIds) => {

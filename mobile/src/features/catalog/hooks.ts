@@ -28,9 +28,14 @@ export function useCard(cardId: string) {
 const MAX_PARALLEL_REQUESTS = 6;
 
 /** Loads each card, cache first, a few at a time. Failures are skipped. */
-export async function loadCards(language: Language, cardIds: readonly string[]): Promise<Map<string, CardDetail>> {
+export async function loadCards(
+  language: Language,
+  cardIds: readonly string[],
+  onProgress?: (doneCount: number) => void,
+): Promise<Map<string, CardDetail>> {
   const cards = new Map<string, CardDetail>();
   const queue = [...cardIds];
+  let doneCount = 0;
   const worker = async () => {
     for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
       const cardId = id;
@@ -40,6 +45,7 @@ export async function loadCards(language: Language, cardIds: readonly string[]):
       } catch {
         // Card not found or network failure. It is simply left out of the result.
       }
+      onProgress?.(++doneCount);
     }
   };
   await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL_REQUESTS, queue.length) }, worker));

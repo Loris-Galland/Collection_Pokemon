@@ -1,5 +1,5 @@
 import { computeAllSetProgress, normalizeSearchText, type CardSet } from '@collection/shared';
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { ProfileButton } from '@/features/account/profile-button';
 import { CardSearchResults } from '@/features/catalog/card-search-results';
 import { useCardSearch, useSets } from '@/features/catalog/hooks';
 import { SetCard } from '@/features/catalog/set-card';
+import { prepareCardSearch } from '@/features/catalog/tcgdex';
 import { SetTile } from '@/features/catalog/set-tile';
 import { useCopies, useOwnedQuantities } from '@/features/collection/collection-provider';
 import { useSettings } from '@/features/settings/settings-provider';
@@ -35,8 +36,10 @@ export default function CatalogScreen() {
   const ownedQuantities = useOwnedQuantities();
   const { isWished } = useWishlist();
   const [search, setSearch] = useState('');
+  // Typing stays quick, since the list of sets follows when the phone has time.
+  const deferredSearch = useDeferredValue(search);
   const cardSearch = useCardSearch(search);
-  const { setDisplay, setSetDisplay } = useSettings();
+  const { language, setDisplay, setSetDisplay } = useSettings();
   const large = setDisplay === 'large';
   const largeColumns = useColumns(380, 3);
   const gridColumns = useColumns(120, 6);
@@ -48,10 +51,10 @@ export default function CatalogScreen() {
   const setsById = useMemo(() => new Map<string, CardSet>((sets ?? []).map((set) => [set.id, set])), [sets]);
 
   const visibleSets = useMemo(() => {
-    const query = normalizeSearchText(search);
+    const query = normalizeSearchText(deferredSearch);
     if (!query) return sets ?? [];
     return (sets ?? []).filter((set) => normalizeSearchText(set.name).includes(query));
-  }, [sets, search]);
+  }, [sets, deferredSearch]);
 
   const cells = useFilledRows(visibleSets, columns);
 
@@ -80,10 +83,9 @@ export default function CatalogScreen() {
         contentContainerStyle={styles.list}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        initialNumToRender={large ? 5 : 15}
-        maxToRenderPerBatch={large ? 6 : 18}
-        windowSize={7}
-        removeClippedSubviews
+        initialNumToRender={large ? 4 : 8}
+        maxToRenderPerBatch={large ? 4 : 6}
+        windowSize={5}
         ListHeaderComponent={
           <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
             <View style={styles.titleRow}>
@@ -99,6 +101,8 @@ export default function CatalogScreen() {
               <TextInput
                 value={search}
                 onChangeText={setSearch}
+                // The list of cards loads as soon as a search looks likely, not after the first letters.
+                onFocus={() => prepareCardSearch(language)}
                 placeholder="Rechercher une carte ou une extension"
                 placeholderTextColor={colors.textFaint}
                 style={styles.search}

@@ -160,3 +160,39 @@ describe('collection store', () => {
     assert.equal(attempts, 1);
   });
 });
+
+describe('adding several copies', () => {
+  it('saves them as one change and redraws once', async () => {
+    const applied: CollectionChange[] = [];
+    let id = 0;
+    const store = createCollectionStore(
+      { load: async () => ({ copies: [], readOnly: false }), apply: async (change) => void applied.push(change) },
+      () => `id-${++id}`,
+    );
+    await store.load();
+    let redraws = 0;
+    store.subscribe(() => redraws++);
+
+    store.addMany([input, { ...input, cardId: 'sv03.5-007' }, { ...input, cardId: 'sv03.5-008' }]);
+
+    assert.equal(store.getState().copies.length, 3);
+    assert.equal(redraws, 1, 'the screen redraws once for the whole selection');
+    await new Promise((resolve) => setTimeout(resolve));
+    assert.equal(applied.length, 1, 'the source writes once');
+    assert.equal(store.getState().savedCopies.length, 3);
+  });
+
+  it('undoes the whole selection when it cannot be saved', async () => {
+    const store = createCollectionStore(
+      { load: async () => ({ copies: [], readOnly: false }), apply: async () => { throw new Error('refused'); } },
+      () => 'id',
+    );
+    await store.load();
+
+    store.addMany([input, { ...input, cardId: 'sv03.5-007' }]);
+    await new Promise((resolve) => setTimeout(resolve));
+
+    assert.equal(store.getState().copies.length, 0);
+    assert.equal(store.getState().saveFailed, true);
+  });
+});
