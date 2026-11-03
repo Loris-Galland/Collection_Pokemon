@@ -47,6 +47,10 @@ _À éviter_ : complétion, avancement
 **Valeur de la collection** :
 La somme des prix de tous les exemplaires, multipliés par leur quantité. Contrairement à la progression, chaque exemplaire compte.
 
+**Tendance de la valeur** :
+Une estimation : ce que vaudraient les exemplaires possédés aujourd'hui aux moyennes Cardmarket récentes (sur 30, 7 et 1 jour). Elle ne bouge qu'avec les prix, jamais avec les ajouts d'exemplaires, et l'écart affiché compare la moyenne du dernier jour à celle des 7 derniers jours. Ce n'est pas un écart exact sur 24 h.
+_À éviter_ : évolution, historique
+
 **Relevé** :
 La valeur de la collection d'un utilisateur à une date donnée.
 _À éviter_ : snapshot, point

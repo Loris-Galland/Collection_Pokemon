@@ -14,6 +14,10 @@ export const colors = {
   accentText: '#1A1400',
   success: '#4ADE80',
   danger: '#F87171',
+  successSoft: 'rgba(74, 222, 128, 0.12)',
+  dangerSoft: 'rgba(248, 113, 113, 0.12)',
+  /** Background of the badges laid over a card image. */
+  overlay: 'rgba(11, 11, 16, 0.86)',
   /** Wishlist color. */
   wish: '#FF6B9D',
 } as const;

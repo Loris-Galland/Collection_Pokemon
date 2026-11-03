@@ -16,16 +16,18 @@ interface AreaChartProps {
   points: readonly ChartPoint[];
   color: string;
   height?: number;
-  /** Formats the value shown above each point. */
-  formatValue: (value: number) => string;
+  /** Formats the value shown above each point. Without it, no value is shown. */
+  formatValue?: (value: number) => string;
+  /** Small version with the curve alone, its grid and intermediate dots removed. */
+  compact?: boolean;
 }
 
-const PADDING_X = 28;
-const PADDING_TOP = 28;
-const PADDING_BOTTOM = 8;
+const PADDING = { x: 28, top: 28, bottom: 8 };
+const COMPACT_PADDING = { x: 20, top: 10, bottom: 10 };
 
 /** Smooth curve with a gradient underneath, drawn from left to right. Points are evenly spaced. */
-export function AreaChart({ points, color, height = 160, formatValue }: AreaChartProps) {
+export function AreaChart({ points, color, height = 160, formatValue, compact = false }: AreaChartProps) {
+  const { x: PADDING_X, top: PADDING_TOP, bottom: PADDING_BOTTOM } = compact ? COMPACT_PADDING : PADDING;
   const [width, setWidth] = useState(0);
   const reveal = useSharedValue(0);
 
@@ -66,39 +68,41 @@ export function AreaChart({ points, color, height = 160, formatValue }: AreaChar
                   <Stop offset="1" stopColor={color} stopOpacity={0} />
                 </LinearGradient>
               </Defs>
-              {coords.map((point, index) => (
-                <Line
-                  key={`grid-${index}`}
-                  x1={point.x}
-                  x2={point.x}
-                  y1={PADDING_TOP / 2}
-                  y2={height}
-                  stroke={colors.border}
-                  strokeDasharray="3 5"
-                />
-              ))}
+              {!compact &&
+                coords.map((point, index) => (
+                  <Line
+                    key={`grid-${index}`}
+                    x1={point.x}
+                    x2={point.x}
+                    y1={PADDING_TOP / 2}
+                    y2={height}
+                    stroke={colors.border}
+                    strokeDasharray="3 5"
+                  />
+                ))}
               <Path d={area} fill="url(#area)" />
               <Path d={line} fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" />
-              {coords.map((point, index) => (
+              {(compact ? coords.slice(-1) : coords).map((point, index) => (
                 <Circle
                   key={`dot-${index}`}
                   cx={point.x}
                   cy={point.y}
-                  r={index === coords.length - 1 ? 6 : 4}
+                  r={compact || index === coords.length - 1 ? 6 : 4}
                   fill={colors.background}
                   stroke={color}
                   strokeWidth={3}
                 />
               ))}
             </Svg>
-            {coords.map((point, index) => (
-              <Text
-                key={`value-${index}`}
-                variant="caption"
-                style={[styles.value, { left: point.x - 40, top: point.y - 26 }]}>
-                {formatValue(points[index]!.value)}
-              </Text>
-            ))}
+            {formatValue &&
+              coords.map((point, index) => (
+                <Text
+                  key={`value-${index}`}
+                  variant="caption"
+                  style={[styles.value, { left: point.x - 40, top: point.y - 26 }]}>
+                  {formatValue(points[index]!.value)}
+                </Text>
+              ))}
           </Animated.View>
         )}
       </View>

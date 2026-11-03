@@ -10,7 +10,8 @@ A mobile app to track a Pokémon card collection. It shows what you own, what is
 - Search for a card or a set straight from the home screen
 - Add the copies you own, with their variant, language, condition and quantity
 - Follow your progress in each set, secret cards included
-- See the value of your collection and the price trend of each card
+- See every copy you own with its price and condition
+- See the value of your collection, its estimated recent trend and the price trend of each card
 - Keep a wishlist of the cards you want, which clears itself as you collect them
 
 ## Project structure

@@ -60,7 +60,7 @@ export function PriceTrendCard({ trends }: { trends: readonly PriceTrend[] }) {
           <Text variant="title">{formatEuros(trend.trend ?? points.at(-1)!.value)}</Text>
         </View>
         {delta !== undefined && (
-          <View style={[styles.badge, { backgroundColor: rising ? SUCCESS_BG : DANGER_BG }]}>
+          <View style={[styles.badge, { backgroundColor: rising ? colors.successSoft : colors.dangerSoft }]}>
             <Text variant="caption" style={{ color: lineColor }}>
               {rising ? '▲' : '▼'} {Math.abs(Math.round(delta * 100))} % sur {period}
             </Text>
@@ -113,9 +113,6 @@ function Stat({ label, value }: { label: string; value: number | undefined }) {
     </View>
   );
 }
-
-const SUCCESS_BG = 'rgba(74, 222, 128, 0.12)';
-const DANGER_BG = 'rgba(248, 113, 113, 0.12)';
 
 const styles = StyleSheet.create({
   card: {

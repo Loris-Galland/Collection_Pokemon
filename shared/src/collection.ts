@@ -25,6 +25,17 @@ export const CONDITION_LABELS: Record<Condition, string> = {
   poor: 'Poor',
 };
 
+/** Cardmarket abbreviations, short enough to fit on a card. */
+export const CONDITION_ABBREVIATIONS: Record<Condition, string> = {
+  mint: 'MT',
+  'near-mint': 'NM',
+  excellent: 'EX',
+  good: 'GD',
+  'light-played': 'LP',
+  played: 'PL',
+  poor: 'PO',
+};
+
 export const DEFAULT_CONDITION: Condition = 'near-mint';
 
 /**
