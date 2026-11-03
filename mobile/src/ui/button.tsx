@@ -1,5 +1,7 @@
+import type { ComponentType } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
+import type { IconProps } from './icons';
 import { Text } from './text';
 import { colors, radius, spacing } from './theme';
 
@@ -8,11 +10,13 @@ interface ButtonProps {
   onPress: () => void;
   variant?: 'primary' | 'secondary';
   disabled?: boolean;
+  icon?: ComponentType<IconProps>;
 }
 
 /** Primary button in yellow, or a discreet secondary one. */
-export function Button({ label, onPress, variant = 'primary', disabled = false }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', disabled = false, icon: Icon }: ButtonProps) {
   const primary = variant === 'primary';
+  const color = primary ? colors.accentText : colors.text;
   return (
     <Pressable
       accessibilityRole="button"
@@ -24,7 +28,8 @@ export function Button({ label, onPress, variant = 'primary', disabled = false }
         primary ? styles.primary : styles.secondary,
         (pressed || disabled) && styles.dimmed,
       ]}>
-      <Text variant="heading" style={{ color: primary ? colors.accentText : colors.text }}>
+      {Icon && <Icon color={color} />}
+      <Text variant="heading" style={{ color }}>
         {label}
       </Text>
     </Pressable>
@@ -33,6 +38,8 @@ export function Button({ label, onPress, variant = 'primary', disabled = false }
 
 const styles = StyleSheet.create({
   base: {
+    flexDirection: 'row',
+    gap: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.md + 2,

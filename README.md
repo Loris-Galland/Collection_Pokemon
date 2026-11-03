@@ -2,7 +2,7 @@
 
 A mobile app to track a Pokémon card collection. It shows what you own, what is still missing in each set, and what your collection is worth.
 
-> This is an unofficial app. Pokémon cards and their images belong to The Pokémon Company. Catalog data comes from [TCGdex](https://tcgdex.dev). Prices are indicative Cardmarket averages, not actual sale prices.
+> This is an unofficial app. Pokémon cards and their images belong to The Pokémon Company. Catalog data comes from [TCGdex](https://tcgdex.dev), with some missing pictures from [pokemontcg.io](https://pokemontcg.io). Prices are indicative Cardmarket averages, not actual sale prices.
 
 ## Features
 

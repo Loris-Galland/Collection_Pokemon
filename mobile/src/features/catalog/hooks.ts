@@ -28,7 +28,7 @@ export function useCard(cardId: string) {
 const MAX_PARALLEL_REQUESTS = 6;
 
 /** Loads each card, cache first, a few at a time. Failures are skipped. */
-async function loadCards(language: Language, cardIds: readonly string[]): Promise<Map<string, CardDetail>> {
+export async function loadCards(language: Language, cardIds: readonly string[]): Promise<Map<string, CardDetail>> {
   const cards = new Map<string, CardDetail>();
   const queue = [...cardIds];
   const worker = async () => {
@@ -87,14 +87,14 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 export const CARD_SEARCH_MIN_LENGTH = 2;
 const MAX_QUERY_LENGTH = 60;
 
-/** Cards whose name contains the query, across every set. */
+/** Cards matching the query, across every set. */
 export function useCardSearch(query: string) {
   const { language } = useSettings();
   // A sensible query fits in a few words, so oversized input is truncated.
   const debounced = useDebouncedValue(query.trim().slice(0, MAX_QUERY_LENGTH), 300);
   const enabled = debounced.length >= CARD_SEARCH_MIN_LENGTH;
   const result = useQuery(`search:${language}:${debounced.toLocaleLowerCase('fr')}`, () =>
-    enabled ? searchCards(language, debounced) : Promise.resolve([]),
+    enabled ? searchCards(language, debounced) : Promise.resolve({ cards: [], total: 0 }),
   );
   // Until the input settles, the search counts as still running.
   const pending = query.trim().slice(0, MAX_QUERY_LENGTH) !== debounced;

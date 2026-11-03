@@ -1,15 +1,22 @@
 import { computeSetProgress } from '@collection/shared';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
+import { useRequireAccount } from '@/features/account/use-account';
 import { CardTile } from '@/features/catalog/card-tile';
 import { useSet } from '@/features/catalog/hooks';
-import { useCopies, useOwnedQuantities } from '@/features/collection/collection-provider';
+import { BulkAddPanel } from '@/features/collection/bulk-add-panel';
+import { useCollectionStatus, useCopies, useOwnedQuantities } from '@/features/collection/collection-provider';
 import { formatPercent } from '@/lib/format';
-import { ProgressBar, StateView, Text, colors, spacing } from '@/ui';
+import { Button, ProgressBar, StateView, Text, Toast, colors, spacing, useToast } from '@/ui';
 
 const COLUMNS = 3;
+// Keeps the last cards reachable above the panel of the selection.
+const SELECTION_PANEL_ROOM = 160;
+
+const cardsLabel = (count: number) => `${count} carte${count > 1 ? 's' : ''}`;
 
 /** Set screen with all of its cards, missing ones greyed out, and the progress. It will become the binder. */
 export default function SetScreen() {
@@ -17,6 +24,25 @@ export default function SetScreen() {
   const { data, error, retry } = useSet(setId);
   const copies = useCopies();
   const owned = useOwnedQuantities();
+  const readOnly = useCollectionStatus() === 'read-only';
+  const requireAccount = useRequireAccount();
+  const { toast, showToast } = useToast();
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+
+  const stopSelecting = () => {
+    setSelecting(false);
+    setSelectedIds(new Set());
+  };
+
+  const startSelecting = () => requireAccount(() => setSelecting(true));
+
+  const toggleSelected = (cardId: string) =>
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (!next.delete(cardId)) next.add(cardId);
+      return next;
+    });
 
   if (error) {
     return (
@@ -41,7 +67,8 @@ export default function SetScreen() {
         keyExtractor={(card) => card.id}
         numColumns={COLUMNS}
         style={styles.screen}
-        contentContainerStyle={styles.grid}
+        contentContainerStyle={[styles.grid, selecting && { paddingBottom: SELECTION_PANEL_ROOM }]}
+        extraData={selectedIds}
         columnWrapperStyle={styles.row}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -55,14 +82,38 @@ export default function SetScreen() {
               </Text>
             </View>
             <ProgressBar ratio={progress.ratio} />
+            {!readOnly && !selecting && <Button label="Ajouter plusieurs cartes" variant="secondary" onPress={startSelecting} />}
           </View>
         }
         renderItem={({ item }) => (
           <View style={styles.cell}>
-            <CardTile card={item} ownedQuantity={owned.get(item.id) ?? 0} />
+            <CardTile
+              card={item}
+              ownedQuantity={owned.get(item.id) ?? 0}
+              selecting={selecting}
+              selected={selectedIds.has(item.id)}
+              onToggleSelected={toggleSelected}
+            />
           </View>
         )}
       />
+      {selecting && (
+        <BulkAddPanel
+          selected={cards.filter((card) => selectedIds.has(card.id))}
+          onCancel={stopSelecting}
+          onSelectMissing={() => setSelectedIds(new Set(cards.filter((card) => !owned.has(card.id)).map((card) => card.id)))}
+          onDone={(addedCount, failedIds) => {
+            showToast(
+              failedIds.length > 0
+                ? `${cardsLabel(addedCount)} ajoutée${addedCount > 1 ? 's' : ''}. ${cardsLabel(failedIds.length)} à réessayer.`
+                : `${cardsLabel(addedCount)} ajoutée${addedCount > 1 ? 's' : ''} à ta collection`,
+            );
+            if (failedIds.length > 0) setSelectedIds(new Set(failedIds));
+            else stopSelecting();
+          }}
+        />
+      )}
+      <Toast toast={toast} />
     </>
   );
 }

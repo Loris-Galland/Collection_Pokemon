@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Text, TextField, colors, radius, spacing } from '@/ui';
 
 import { authClient, withTwoFactorCode } from './auth-client';
+import { forgetAvatar } from './avatar';
 import { FormError } from './form-error';
 import { removeLocalData } from './local-data';
 import { TwoFactorSetup } from './two-factor-setup';
@@ -109,6 +110,7 @@ export function DeleteAccountSection({ userId, hasPassword, twoFactorEnabled }: 
     send(
       () => authClient.deleteUser(hasPassword ? { password } : {}, withTwoFactorCode(code)),
       async () => {
+        forgetAvatar(userId);
         await removeLocalData(userId);
         leaveAccountScreen();
       },

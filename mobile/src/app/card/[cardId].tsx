@@ -13,7 +13,7 @@ import { CopyRow } from '@/features/collection/copy-row';
 import { WishButton } from '@/features/wishlist/wish-button';
 import { useWishlist } from '@/features/wishlist/wishlist-provider';
 import { formatEuros } from '@/lib/format';
-import { StateView, Text, colors, radius, spacing } from '@/ui';
+import { StateView, Text, Toast, colors, radius, spacing, useToast } from '@/ui';
 
 /** Card screen with the preview, prices, owned copies and the add form. */
 export default function CardScreen() {
@@ -22,6 +22,7 @@ export default function CardScreen() {
   const copies = useCopies();
   const readOnly = useCollectionStatus() === 'read-only';
   const { obtainedCardIds } = useWishlist();
+  const { toast, showToast } = useToast();
 
   if (error) {
     return (
@@ -100,10 +101,17 @@ export default function CardScreen() {
         {!readOnly && (
           <View style={styles.owned}>
             <Text variant="title">Ajouter</Text>
-            <AddCopyForm key={card.id} card={card} />
+            <AddCopyForm
+              key={card.id}
+              card={card}
+              onAdded={(quantity) =>
+                showToast(quantity > 1 ? `${quantity} exemplaires ajoutés à ta collection` : 'Ajoutée à ta collection')
+              }
+            />
           </View>
         )}
       </ScrollView>
+      <Toast toast={toast} />
     </>
   );
 }

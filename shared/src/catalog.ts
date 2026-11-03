@@ -19,6 +19,11 @@ export const VARIANT_LABELS: Record<Variant, string> = {
   'first-edition': '1re édition',
 };
 
+/** The variant to add when several cards are added at once, the first one the card has when it lacks the wanted one. */
+export function pickVariant(available: readonly Variant[], preferred: Variant): Variant {
+  return available.includes(preferred) ? preferred : (available[0] ?? 'normal');
+}
+
 export function isVariant(value: unknown): value is Variant {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(VARIANT_LABELS, value);
 }

@@ -1,15 +1,20 @@
-import { computeAllSetProgress, type CardSet } from '@collection/shared';
+import { computeAllSetProgress, normalizeSearchText, type CardSet } from '@collection/shared';
 import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProfileButton } from '@/features/account/profile-button';
 import { CardSearchResults } from '@/features/catalog/card-search-results';
 import { useCardSearch, useSets } from '@/features/catalog/hooks';
 import { SetCard } from '@/features/catalog/set-card';
+import { SetTile } from '@/features/catalog/set-tile';
 import { useCopies, useOwnedQuantities } from '@/features/collection/collection-provider';
+import { useSettings } from '@/features/settings/settings-provider';
 import { useWishlist } from '@/features/wishlist/wishlist-provider';
 import {
+  GridIcon,
+  LargeCardsIcon,
   MAX_CONTENT_WIDTH,
   StateView,
   Text,
@@ -31,7 +36,11 @@ export default function CatalogScreen() {
   const { isWished } = useWishlist();
   const [search, setSearch] = useState('');
   const cardSearch = useCardSearch(search);
-  const columns = useColumns(380, 3);
+  const { setDisplay, setSetDisplay } = useSettings();
+  const large = setDisplay === 'large';
+  const largeColumns = useColumns(380, 3);
+  const gridColumns = useColumns(120, 6);
+  const columns = large ? largeColumns : gridColumns;
 
   // One pass over the collection for every set, each time the collection changes.
   const progressBySet = useMemo(() => computeAllSetProgress(sets ?? [], copies), [sets, copies]);
@@ -39,9 +48,9 @@ export default function CatalogScreen() {
   const setsById = useMemo(() => new Map<string, CardSet>((sets ?? []).map((set) => [set.id, set])), [sets]);
 
   const visibleSets = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase('fr');
+    const query = normalizeSearchText(search);
     if (!query) return sets ?? [];
-    return (sets ?? []).filter((set) => set.name.toLocaleLowerCase('fr').includes(query));
+    return (sets ?? []).filter((set) => normalizeSearchText(set.name).includes(query));
   }, [sets, search]);
 
   const cells = useFilledRows(visibleSets, columns);
@@ -71,31 +80,45 @@ export default function CatalogScreen() {
         contentContainerStyle={styles.list}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        initialNumToRender={5}
-        maxToRenderPerBatch={6}
+        initialNumToRender={large ? 5 : 15}
+        maxToRenderPerBatch={large ? 6 : 18}
         windowSize={7}
         removeClippedSubviews
         ListHeaderComponent={
           <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-            <View style={styles.titleBlock}>
-              <Text variant="overline" tone="accent">
-                {sets.length} extensions
-              </Text>
-              <Text variant="display">Catalogue</Text>
+            <View style={styles.titleRow}>
+              <View style={styles.titleBlock}>
+                <Text variant="overline" tone="accent">
+                  {sets.length} extensions
+                </Text>
+                <Text variant="display">Catalogue</Text>
+              </View>
+              <ProfileButton />
             </View>
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Rechercher une carte ou une extension"
-              placeholderTextColor={colors.textFaint}
-              style={styles.search}
-              autoCorrect={false}
-              clearButtonMode="while-editing"
-              returnKeyType="search"
-            />
+            <View style={styles.searchRow}>
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Rechercher une carte ou une extension"
+                placeholderTextColor={colors.textFaint}
+                style={styles.search}
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+                returnKeyType="search"
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={large ? 'Afficher les extensions en grille' : 'Afficher les extensions en grand'}
+                hitSlop={6}
+                onPress={() => setSetDisplay(large ? 'grid' : 'large')}
+                style={({ pressed }) => [styles.displayButton, pressed && styles.pressed]}>
+                {large ? <GridIcon color={colors.text} /> : <LargeCardsIcon color={colors.text} />}
+              </Pressable>
+            </View>
             {cardSearch.enabled && (
               <CardSearchResults
-                cards={cardSearch.data}
+                cards={cardSearch.data?.cards}
+                total={cardSearch.data?.total}
                 loading={cardSearch.loading}
                 error={cardSearch.error !== undefined}
                 setsById={setsById}
@@ -108,13 +131,18 @@ export default function CatalogScreen() {
         }
         ListEmptyComponent={
           // When the card search already shows results, there is no need to say that no set matches.
-          cardSearch.enabled && cardSearch.data?.length !== 0 ? undefined : (
+          cardSearch.enabled && cardSearch.data?.total !== 0 ? undefined : (
             <Text tone="muted">Aucune extension ne correspond.</Text>
           )
         }
         renderItem={({ item, index }) => (
           <View style={styles.cell}>
-            {item && <SetCard set={item} progress={progressBySet.get(item.id)!} index={searching ? 0 : index} />}
+            {item &&
+              (large ? (
+                <SetCard set={item} progress={progressBySet.get(item.id)!} index={searching ? 0 : index} />
+              ) : (
+                <SetTile set={item} progress={progressBySet.get(item.id)!} />
+              ))}
           </View>
         )}
       />
@@ -146,10 +174,35 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     paddingTop: WEB_TAB_BAR_OFFSET,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
   titleBlock: {
+    flex: 1,
     gap: spacing.xs,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacing.sm,
+  },
+  displayButton: {
+    width: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
   search: {
+    flex: 1,
     color: colors.text,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

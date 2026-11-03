@@ -36,6 +36,10 @@ export default function PrivacyScreen() {
           si tu utilises Google.
         </Paragraph>
         <Paragraph>
+          Ta photo de profil, si tu en ajoutes une : une version réduite, sans ses métadonnées, conservée sur notre serveur
+          et visible seulement par toi.
+        </Paragraph>
+        <Paragraph>
           Ta sécurité : le secret et les codes de secours de la validation en deux étapes, sous forme chiffrée.
         </Paragraph>
         <Paragraph>
@@ -57,6 +61,7 @@ export default function PrivacyScreen() {
 
       <Section title="Combien de temps">
         <Paragraph>Ton compte : jusqu’à ce que tu le supprimes.</Paragraph>
+        <Paragraph>Ta photo de profil : jusqu’à ce que tu la retires ou que tu supprimes ton compte.</Paragraph>
         <Paragraph>Tes sessions : elles expirent après 7 jours sans utilisation, puis sont effacées.</Paragraph>
         <Paragraph>Les tentatives de connexion : 48 heures au plus.</Paragraph>
       </Section>
@@ -70,6 +75,10 @@ export default function PrivacyScreen() {
         <Paragraph>
           TCGdex, qui fournit le catalogue et les images : ce service reçoit l’adresse IP de ton téléphone quand tu
           parcours les cartes.
+        </Paragraph>
+        <Paragraph>
+          pokemontcg.io et Scrydex, qui fournissent les images absentes de TCGdex : ces services reçoivent aussi l’adresse IP
+          de ton téléphone quand une de ces images s’affiche.
         </Paragraph>
       </Section>
 
@@ -86,7 +95,8 @@ export default function PrivacyScreen() {
           demander la limitation.
         </Paragraph>
         <Paragraph>
-          Dans Réglages, puis Mon compte, tu peux modifier ton pseudo, exporter tes données et supprimer ton compte.
+          Dans Réglages, puis Mon compte, tu peux modifier ton pseudo et ta photo, exporter tes données et supprimer ton
+          compte.
         </Paragraph>
         <Paragraph>Tu peux aussi adresser une réclamation à la CNIL (cnil.fr).</Paragraph>
       </Section>

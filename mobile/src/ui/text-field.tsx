@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
+import { useRevealField } from './keyboard-scroll-view';
 import { Text } from './text';
 import { colors, radius, spacing, typography } from './theme';
 
 /** Text input with its label above it. */
 export function TextField({ label, style, onFocus, onBlur, ...rest }: TextInputProps & { label: string }) {
   const [focused, setFocused] = useState(false);
+  const revealField = useRevealField();
   return (
     <View style={styles.field}>
       <Text variant="overline" tone="muted">
@@ -20,6 +22,7 @@ export function TextField({ label, style, onFocus, onBlur, ...rest }: TextInputP
         autoCorrect={false}
         onFocus={(event) => {
           setFocused(true);
+          revealField?.();
           onFocus?.(event);
         }}
         onBlur={(event) => {

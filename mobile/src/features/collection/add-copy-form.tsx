@@ -20,7 +20,7 @@ import { Button, Chip, Stepper, Text, colors, radius, spacing } from '@/ui';
 import { useCollectionActions } from './collection-provider';
 
 /** Form to add a copy with its variant, language, condition and quantity. */
-export function AddCopyForm({ card }: { card: Card }) {
+export function AddCopyForm({ card, onAdded }: { card: Card; onAdded: (quantity: number) => void }) {
   const { add } = useCollectionActions();
   const requireAccount = useRequireAccount();
   const settings = useSettings();
@@ -32,6 +32,7 @@ export function AddCopyForm({ card }: { card: Card }) {
   const submit = () =>
     requireAccount(() => {
       add({ cardId: card.id, setId: card.setId, variant, language, condition, quantity });
+      onAdded(quantity);
       setQuantity(1);
     });
 
@@ -63,7 +64,7 @@ export function AddCopyForm({ card }: { card: Card }) {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={styles.field}>
       <Text variant="overline" tone="muted">

@@ -1,18 +1,20 @@
 import type { Card, CardSet } from '@collection/shared';
 import { router } from 'expo-router';
 import { memo } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { PressableScale, Text, colors, radius, spacing } from '@/ui';
 
 import { CardImage } from './card-image';
 import { SEARCH_LIMIT } from './tcgdex';
 
-const TILE_WIDTH = 116;
+const COLUMNS = 3;
 
 interface CardSearchResultsProps {
   cards: readonly Card[] | undefined;
+  /** How many cards match, which can be more than the ones given. */
+  total: number | undefined;
   loading: boolean;
   error: boolean;
   /** Used to show the set name under each card. */
@@ -22,9 +24,10 @@ interface CardSearchResultsProps {
   isWished: (cardId: string) => boolean;
 }
 
-/** Card search results, shown as a horizontally scrolling row. */
+/** Card search results, shown as a grid. */
 export function CardSearchResults({
   cards,
+  total,
   loading,
   error,
   setsById,
@@ -40,9 +43,7 @@ export function CardSearchResults({
         ) : (
           cards && (
             <Text variant="caption" tone="muted">
-              {cards.length === SEARCH_LIMIT
-                ? `${SEARCH_LIMIT}+ résultats`
-                : `${cards.length} résultat${cards.length > 1 ? 's' : ''}`}
+              {total} résultat{total === 1 ? '' : 's'}
             </Text>
           )
         )}
@@ -53,25 +54,21 @@ export function CardSearchResults({
       ) : cards && cards.length === 0 && !loading ? (
         <Text tone="muted">Aucune carte ne porte ce nom.</Text>
       ) : (
-        <Animated.View entering={FadeIn.duration(250)}>
-          <FlatList
-            horizontal
-            data={cards}
-            keyExtractor={(card) => card.id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.row}
-            initialNumToRender={6}
-            windowSize={5}
-            renderItem={({ item, index }) => (
-              <SearchCardTile
-                card={item}
-                index={index}
-                setName={setsById.get(item.setId)?.name}
-                ownedQuantity={ownedQuantities.get(item.id) ?? 0}
-                wished={isWished(item.id)}
-              />
-            )}
-          />
+        <Animated.View entering={FadeIn.duration(250)} style={styles.grid}>
+          {(cards ?? []).map((card) => (
+            <SearchCardTile
+              key={card.id}
+              card={card}
+              setName={setsById.get(card.setId)?.name}
+              ownedQuantity={ownedQuantities.get(card.id) ?? 0}
+              wished={isWished(card.id)}
+            />
+          ))}
+          {(total ?? 0) > SEARCH_LIMIT && (
+            <Text variant="caption" tone="muted" style={styles.narrow}>
+              Seuls les {SEARCH_LIMIT} premiers s’affichent. Ajoute l’extension ou le numéro pour affiner, par exemple « Pikachu 151 ».
+            </Text>
+          )}
         </Animated.View>
       )}
     </View>
@@ -80,28 +77,13 @@ export function CardSearchResults({
 
 interface SearchCardTileProps {
   card: Card;
-  index: number;
   setName: string | undefined;
   ownedQuantity: number;
   wished: boolean;
 }
 
-const SearchCardTile = memo(function SearchCardTile({
-  card,
-  index,
-  setName,
-  ownedQuantity,
-  wished,
-}: SearchCardTileProps) {
+const SearchCardTile = memo(function SearchCardTile({ card, setName, ownedQuantity, wished }: SearchCardTileProps) {
   return (
-    <Animated.View
-      entering={
-        index < 6
-          ? FadeInRight.delay(index * 50)
-              .springify()
-              .damping(18)
-          : undefined
-      }>
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel={`${card.name}, ${setName ?? card.setId} ${card.localId}`}
@@ -131,7 +113,6 @@ const SearchCardTile = memo(function SearchCardTile({
           {setName ?? card.setId} · {card.localId}
         </Text>
       </PressableScale>
-    </Animated.View>
   );
 });
 
@@ -144,12 +125,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  row: {
-    gap: spacing.md,
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: spacing.md,
+    marginHorizontal: -spacing.xs,
   },
   tile: {
-    width: TILE_WIDTH,
+    width: `${100 / COLUMNS}%`,
+    paddingHorizontal: spacing.xs,
     gap: 2,
+  },
+  narrow: {
+    width: '100%',
+    paddingHorizontal: spacing.xs,
   },
   badge: {
     position: 'absolute',

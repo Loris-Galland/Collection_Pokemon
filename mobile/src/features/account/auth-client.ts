@@ -13,9 +13,11 @@ function apiUrl(): string {
   return url;
 }
 
+export const API_URL = apiUrl();
+
 /** Accounts live on our server. The session is kept in the encrypted storage of the phone. */
 export const authClient = createAuthClient({
-  baseURL: apiUrl(),
+  baseURL: API_URL,
   plugins: [expoClient({ scheme: 'holo', storage: SecureStore }), twoFactorClient()],
 });
 

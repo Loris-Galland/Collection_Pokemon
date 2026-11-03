@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authClient } from '@/features/account/auth-client';
+import { ProfileButton } from '@/features/account/profile-button';
 import { useAccount } from '@/features/account/use-account';
 import { useSettings } from '@/features/settings/settings-provider';
 import { Button, Chip, Text, WEB_TAB_BAR_OFFSET, colors, radius, spacing } from '@/ui';
@@ -22,10 +23,15 @@ export default function SettingsScreen() {
           <Text variant="heading">Compte</Text>
           {user ? (
             <>
-              <Text>{user.name}</Text>
-              <Text variant="caption" tone="muted">
-                {user.email}
-              </Text>
+              <View style={styles.identity}>
+                <ProfileButton size={56} />
+                <View style={styles.identityText}>
+                  <Text>{user.name}</Text>
+                  <Text variant="caption" tone="muted">
+                    {user.email}
+                  </Text>
+                </View>
+              </View>
               <View style={styles.accountActions}>
                 <Button label="Mon compte et sécurité" variant="secondary" onPress={() => router.push('/account/security')} />
                 <Button label="Se déconnecter" variant="secondary" onPress={() => authClient.signOut()} />
@@ -90,6 +96,15 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+  },
+  identity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  identityText: {
+    flex: 1,
+    gap: spacing.xs,
   },
   chips: {
     flexDirection: 'row',
