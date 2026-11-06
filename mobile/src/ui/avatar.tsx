@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { Text } from './text';
@@ -12,9 +13,10 @@ interface AvatarProps {
 
 /** Round profile picture, or the first letter of the name when there is none. */
 export function Avatar({ name, uri, size = 56 }: AvatarProps) {
+  const { t } = useTranslation();
   const circle = { width: size, height: size, borderRadius: size / 2 };
   if (uri) {
-    return <Image accessibilityLabel="Photo de profil" source={{ uri }} contentFit="cover" cachePolicy="memory" style={circle} />;
+    return <Image accessibilityLabel={t('account.photo')} source={{ uri }} contentFit="cover" cachePolicy="memory" style={circle} />;
   }
   return (
     <View style={[styles.initial, circle]}>

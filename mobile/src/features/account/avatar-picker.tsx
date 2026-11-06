@@ -1,6 +1,7 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { launchImageLibraryAsync } from 'expo-image-picker';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar, Button, PencilIcon, Text, colors, spacing } from '@/ui';
@@ -12,8 +13,6 @@ const AVATAR_WIDTH = 256;
 // The server refuses more than 30 KB, which is 40 000 characters in base64. A very detailed picture needs a lower quality.
 const MAX_BASE64_LENGTH = 40_000;
 const QUALITIES = [0.7, 0.5, 0.3];
-const PREPARE_FAILURE = 'Cette photo n’a pas pu être préparée. Essaies-en une autre.';
-const SAVE_FAILURE = 'La photo n’a pas pu être modifiée. Vérifie ta connexion ou patiente un instant, puis réessaie.';
 
 /** Encoding the picture again makes it small, and leaves out its metadata such as the place it was taken. */
 async function shrink(uri: string): Promise<string> {
@@ -27,6 +26,7 @@ async function shrink(uri: string): Promise<string> {
 
 /** Shows the profile picture and lets the user choose one from the phone, check how it looks, and save or remove it. */
 export function AvatarPicker({ userId, name }: { userId: string; name: string }) {
+  const { t } = useTranslation();
   const uri = useAvatarUri(userId);
   // The picture waiting for the user to confirm it, already cropped and reduced.
   const [draft, setDraft] = useState<string>();
@@ -52,28 +52,28 @@ export function AvatarPicker({ userId, name }: { userId: string; name: string })
     run(async () => {
       const picked = await launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1] });
       if (!picked.canceled) setDraft(await shrink(picked.assets[0].uri));
-    }, PREPARE_FAILURE);
+    }, t('account.photoPrepareFailed'));
 
   const confirm = () =>
     run(async () => {
       if (!draft) return;
       await saveAvatar(userId, draft);
       setDraft(undefined);
-      setSaved('✓ Photo enregistrée');
-    }, SAVE_FAILURE);
+      setSaved(t('account.photoSaved'));
+    }, t('account.photoSaveFailed'));
 
   const remove = () =>
     run(async () => {
       await removeAvatar(userId);
-      setSaved('✓ Photo retirée');
-    }, SAVE_FAILURE);
+      setSaved(t('account.photoRemoved'));
+    }, t('account.photoSaveFailed'));
 
   return (
     <View style={styles.picker}>
       <View style={styles.summary}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={uri ? 'Changer la photo de profil' : 'Ajouter une photo de profil'}
+          accessibilityLabel={uri ? t('account.changePhoto') : t('account.addPhotoLabel')}
           disabled={busy}
           onPress={choose}
           style={({ pressed }) => pressed && styles.pressed}>
@@ -83,9 +83,7 @@ export function AvatarPicker({ userId, name }: { userId: string; name: string })
           </View>
         </Pressable>
         <Text variant="caption" tone="muted" style={styles.hint}>
-          {draft
-            ? 'Voici ta photo recadrée et réduite. Elle n’est enregistrée que si tu la valides.'
-            : 'Facultative. Elle n’est visible que par toi et tu peux la retirer quand tu veux.'}
+          {draft ? t('account.photoDraft') : t('account.photoHint')}
         </Text>
       </View>
       <FormError message={error} />
@@ -99,7 +97,7 @@ export function AvatarPicker({ userId, name }: { userId: string; name: string })
           <>
             <View style={styles.action}>
               <Button
-                label="Annuler"
+                label={t('common.cancel')}
                 variant="secondary"
                 disabled={busy}
                 onPress={() => {
@@ -109,14 +107,14 @@ export function AvatarPicker({ userId, name }: { userId: string; name: string })
               />
             </View>
             <View style={styles.action}>
-              <Button label={busy ? 'Un instant…' : 'Valider'} disabled={busy} onPress={confirm} />
+              <Button label={busy ? t('common.wait') : t('common.confirm')} disabled={busy} onPress={confirm} />
             </View>
           </>
         ) : (
           <>
             <View style={styles.action}>
               <Button
-                label={busy ? 'Un instant…' : uri ? 'Changer' : 'Ajouter une photo'}
+                label={busy ? t('common.wait') : uri ? t('account.change') : t('account.addPhoto')}
                 variant="secondary"
                 disabled={busy}
                 onPress={choose}
@@ -124,7 +122,7 @@ export function AvatarPicker({ userId, name }: { userId: string; name: string })
             </View>
             {uri && (
               <View style={styles.action}>
-                <Button label="Retirer" variant="secondary" disabled={busy} onPress={remove} />
+                <Button label={t('account.removePhoto')} variant="secondary" disabled={busy} onPress={remove} />
               </View>
             )}
           </>

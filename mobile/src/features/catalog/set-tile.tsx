@@ -2,6 +2,7 @@ import type { CardSet, SetProgress } from '@collection/shared';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { PressableScale, ProgressBar, Text, gradientStyle, radius, spacing } from '@/ui';
@@ -19,6 +20,7 @@ interface SetTileProps {
 /** Small set card for the grid, with the logo, the name and the progress. */
 export const SetTile = memo(
   function SetTile({ set, progress }: SetTileProps) {
+    const { t } = useTranslation();
     const theme = setThemeOf(set.id);
     const started = progress.owned > 0;
     // Some TCGdex URLs point to a missing image. In that case the name is enough.
@@ -26,7 +28,11 @@ export const SetTile = memo(
     return (
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel={`${set.name}, ${started ? `${progress.owned} cartes sur ${progress.total}` : `${set.cardCount.total} cartes`}`}
+        accessibilityLabel={
+          started
+            ? t('catalog.setLabelStarted', { name: set.name, owned: progress.owned, total: progress.total })
+            : t('catalog.setLabel', { name: set.name, total: set.cardCount.total })
+        }
         onPress={() => router.push({ pathname: '/set/[setId]', params: { setId: set.id } })}
         style={[styles.tile, gradientStyle(theme.gradient)]}>
         <View style={styles.logoArea}>

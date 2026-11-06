@@ -63,8 +63,8 @@ describe('cheapestPrice', () => {
 
 describe('computeWishlistCost', () => {
   const wishes: Wish[] = [
-    { cardId: 'sv03.5-006', setId: 'sv03.5', addedAt: '2026-10-30' },
-    { cardId: 'sv03.5-151', setId: 'sv03.5', addedAt: '2026-10-30' },
+    { cardId: 'sv03.5-006', setId: 'sv03.5', wishlistId: 'w', addedAt: '2026-10-30' },
+    { cardId: 'sv03.5-151', setId: 'sv03.5', wishlistId: 'w', addedAt: '2026-10-30' },
   ];
 
   it('adds up the cheapest variant of each wish and counts the unpriced ones', () => {
@@ -76,7 +76,7 @@ describe('computeWishlistCost', () => {
 describe('shape guards', () => {
   it('accept valid data', () => {
     assert.equal(isCopy(copy), true);
-    assert.equal(isWish({ cardId: 'x-1', setId: 'x', addedAt: '2026-10-30' }), true);
+    assert.equal(isWish({ cardId: 'x-1', setId: 'x', wishlistId: 'w', addedAt: '2026-10-30' }), true);
     assert.equal(isLanguage('fr'), true);
   });
 

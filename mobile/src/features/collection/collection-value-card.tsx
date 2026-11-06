@@ -1,5 +1,6 @@
 import { recentValueChange, type CollectionValue, type ValueTrend } from '@collection/shared';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { formatEuros, formatSignedEuros } from '@/lib/format';
@@ -14,6 +15,7 @@ interface CollectionValueCardProps {
 
 /** Small curve of the value trend, then the collection value and its recent change. */
 export function CollectionValueCard({ value, valueTrend, loading }: CollectionValueCardProps) {
+  const { t } = useTranslation();
   // Same points from one render to the next, so the chart only replays its animation when the trend changes.
   const points = useMemo<ChartPoint[]>(
     () =>
@@ -38,7 +40,7 @@ export function CollectionValueCard({ value, valueTrend, loading }: CollectionVa
 
       <View style={styles.headline}>
         <Text variant="overline" tone="muted">
-          Valeur de la collection
+          {t('collection.value')}
         </Text>
         <Text variant="display" tone="accent">
           {loading ? '…' : formatEuros(value.amount)}
@@ -47,17 +49,16 @@ export function CollectionValueCard({ value, valueTrend, loading }: CollectionVa
           <View style={[styles.change, { backgroundColor: changeBackground }]}>
             <Text variant="caption" style={{ color: changeColor }}>
               {change > 0 ? '▲ ' : change < 0 ? '▼ ' : ''}
-              {formatSignedEuros(change)} sur 24 h (estimation)
+              {t('collection.valueChange', { change: formatSignedEuros(change) })}
             </Text>
           </View>
         )}
       </View>
 
       <Text variant="caption" tone="faint">
-        Prix moyens Cardmarket, indicatifs : ce ne sont pas des prix de vente réels.
-        {showTrend &&
-          ' La courbe et l’écart estiment la valeur de tes exemplaires actuels : l’écart compare la moyenne du dernier jour à celle des 7 derniers jours.'}
-        {value.unpricedCopyCount > 0 && ` ${value.unpricedCopyCount} exemplaire(s) sans prix, comptés pour 0 €.`}
+        {t('collection.valueNotice')}
+        {showTrend && t('collection.valueTrendNotice')}
+        {value.unpricedCopyCount > 0 && t('collection.unpricedCopies', { count: value.unpricedCopyCount })}
       </Text>
     </View>
   );

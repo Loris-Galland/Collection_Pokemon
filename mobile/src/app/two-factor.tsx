@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { authClient } from '@/features/account/auth-client';
@@ -9,6 +10,7 @@ import { Button, KeyboardScrollView, Text, TextField, colors, spacing } from '@/
 
 /** Second step of the sign in, with a code from the authenticator app or a backup code. */
 export default function TwoFactorScreen() {
+  const { t } = useTranslation();
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [code, setCode] = useState('');
   const { error, setError, busy, send } = useAccountRequest();
@@ -21,16 +23,12 @@ export default function TwoFactorScreen() {
   return (
     <KeyboardScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.heading}>
-        <Text variant="display">Validation</Text>
-        <Text tone="muted">
-          {useBackupCode
-            ? 'Saisis un de tes codes de secours. Chaque code ne sert qu’une fois.'
-            : 'Saisis le code à 6 chiffres affiché par ton application d’authentification.'}
-        </Text>
+        <Text variant="display">{t('account.twoFactorTitle')}</Text>
+        <Text tone="muted">{useBackupCode ? t('account.backupCodeHint') : t('account.totpHint')}</Text>
       </View>
 
       <TextField
-        label={useBackupCode ? 'Code de secours' : 'Code'}
+        label={useBackupCode ? t('account.backupCode') : t('account.code')}
         value={code}
         onChangeText={setCode}
         keyboardType={useBackupCode ? 'default' : 'number-pad'}
@@ -41,7 +39,7 @@ export default function TwoFactorScreen() {
 
       <FormError message={error} />
 
-      <Button label={busy ? 'Un instant…' : 'Valider'} disabled={busy || !code.trim()} onPress={submit} />
+      <Button label={busy ? t('common.wait') : t('common.confirm')} disabled={busy || !code.trim()} onPress={submit} />
 
       <Pressable
         accessibilityRole="button"
@@ -53,7 +51,7 @@ export default function TwoFactorScreen() {
           setError(undefined);
         }}>
         <Text variant="caption" tone="muted">
-          {useBackupCode ? 'Utiliser mon application d’authentification' : 'Utiliser un code de secours'}
+          {useBackupCode ? t('account.useAuthenticator') : t('account.useBackupCode')}
         </Text>
       </Pressable>
     </KeyboardScrollView>

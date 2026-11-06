@@ -1,5 +1,6 @@
-import { VARIANT_LABELS, sharesShinyPrice } from '@collection/shared';
+import { sharesShinyPrice } from '@collection/shared';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -17,6 +18,7 @@ import { StateView, Text, Toast, colors, radius, spacing, useToast } from '@/ui'
 
 /** Card screen with the preview, prices, owned copies and the add form. */
 export default function CardScreen() {
+  const { t } = useTranslation();
   const { cardId } = useLocalSearchParams<{ cardId: string }>();
   const { data, error, retry } = useCard(cardId);
   const copies = useCopies();
@@ -27,9 +29,9 @@ export default function CardScreen() {
   if (error) {
     return (
       <StateView
-        title="Carte introuvable"
-        message="Vérifie ta connexion, puis réessaie."
-        actionLabel="Réessayer"
+        title={t('card.notFound')}
+        message={t('common.checkConnection')}
+        actionLabel={t('common.retry')}
         onAction={retry}
       />
     );
@@ -53,11 +55,11 @@ export default function CardScreen() {
             {set.name} · {card.localId}/{set.cardCount.official}
             {card.rarity ? ` · ${card.rarity}` : ''}
           </Text>
-          {ownedCopies.length === 0 && <WishButton cardId={card.id} setId={card.setId} />}
+          {ownedCopies.length === 0 && <WishButton card={{ id: card.id, setId: card.setId, name: card.name }} />}
           {obtainedCardIds.has(card.id) && (
             <Animated.View entering={FadeInDown.springify()} style={styles.obtained}>
               <Text variant="caption" style={{ color: colors.success }}>
-                ✓ Obtenue ! Retirée de ta liste d’envies.
+                {t('card.obtained')}
               </Text>
             </Animated.View>
           )}
@@ -67,22 +69,22 @@ export default function CardScreen() {
 
         <View style={styles.section}>
           <Text variant="overline" tone="muted">
-            Prix indicatif Cardmarket
+            {t('card.indicativePrice')}
           </Text>
           {card.variants.map((variant) => {
             const price = prices.find((p) => p.variant === variant);
             return (
               <View key={variant} style={styles.priceRow}>
-                <Text>{VARIANT_LABELS[variant]}</Text>
+                <Text>{t(`variants.${variant}`)}</Text>
                 <Text variant="heading" tone={price ? 'accent' : 'faint'}>
-                  {price ? formatEuros(price.amount) : 'Prix indisponible'}
+                  {price ? formatEuros(price.amount) : t('common.priceUnavailable')}
                 </Text>
               </View>
             );
           })}
           {sharesShinyPrice(card.variants) && (
             <Text variant="caption" tone="faint">
-              Cardmarket ne donne qu’un prix pour les versions brillantes : holo et reverse affichent le même.
+              {t('card.sharedShinyPrice')}
             </Text>
           )}
         </View>
@@ -91,7 +93,7 @@ export default function CardScreen() {
 
         {ownedCopies.length > 0 && (
           <View style={styles.owned}>
-            <Text variant="title">Mes exemplaires</Text>
+            <Text variant="title">{t('card.myCopies')}</Text>
             {ownedCopies.map((copy) => (
               <CopyRow key={copy.id} copy={copy} />
             ))}
@@ -100,12 +102,12 @@ export default function CardScreen() {
 
         {!readOnly && (
           <View style={styles.owned}>
-            <Text variant="title">Ajouter</Text>
+            <Text variant="title">{t('card.add')}</Text>
             <AddCopyForm
               key={card.id}
               card={card}
               onAdded={(quantity) =>
-                showToast(quantity > 1 ? `${quantity} exemplaires ajoutés à ta collection` : 'Ajoutée à ta collection')
+                showToast(quantity > 1 ? t('card.addedMany', { count: quantity }) : t('card.addedOne'))
               }
             />
           </View>

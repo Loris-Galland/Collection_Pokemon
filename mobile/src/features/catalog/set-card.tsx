@@ -2,6 +2,7 @@ import type { CardSet, SetProgress } from '@collection/shared';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -25,6 +26,7 @@ interface SetCardProps {
 
 /** Full width set card with the series gradient, the logo and the progress. */
 export const SetCard = memo(function SetCard({ set, progress, index = 0 }: SetCardProps) {
+  const { t } = useTranslation();
   const theme = setThemeOf(set.id);
   const started = progress.owned > 0;
   // Some TCGdex URLs point to a missing image. In that case we fall back to the text.
@@ -44,7 +46,11 @@ export const SetCard = memo(function SetCard({ set, progress, index = 0 }: SetCa
       <PressableScale
         accessibilityRole="button"
         onPress={() => router.push({ pathname: '/set/[setId]', params: { setId: set.id } })}
-        accessibilityLabel={`${set.name}, ${started ? `${progress.owned} cartes sur ${progress.total}` : `${set.cardCount.total} cartes`}`}
+        accessibilityLabel={
+          started
+            ? t('catalog.setLabelStarted', { name: set.name, owned: progress.owned, total: progress.total })
+            : t('catalog.setLabel', { name: set.name, total: set.cardCount.total })
+        }
         style={[styles.card, gradientStyle(theme.gradient)]}>
         {set.symbolUrl && !symbolFailed && (
           <Image
@@ -83,7 +89,9 @@ export const SetCard = memo(function SetCard({ set, progress, index = 0 }: SetCa
             </Text>
           )}
           <Text variant="caption" style={[styles.centered, styles.caption]}>
-            {started ? `${progress.owned} / ${progress.total} cartes · ` : `${set.cardCount.total} cartes`}
+            {started
+              ? t('catalog.setProgress', { owned: progress.owned, total: progress.total })
+              : t('common.cards', { count: set.cardCount.total })}
             {started && <Text style={{ color: theme.tint }}>{formatPercent(progress.ratio)}</Text>}
           </Text>
           {started && (

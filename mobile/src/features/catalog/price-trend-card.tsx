@@ -1,16 +1,18 @@
-import { VARIANT_LABELS, type PriceTrend } from '@collection/shared';
+import type { PriceTrend } from '@collection/shared';
+import type { TFunction } from 'i18next';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { formatEuros } from '@/lib/format';
 import { AreaChart, Chip, Text, colors, radius, spacing, type ChartPoint } from '@/ui';
 
 /** Chart points from oldest to newest. Missing averages are skipped. */
-function chartPoints(trend: PriceTrend): ChartPoint[] {
+function chartPoints(trend: PriceTrend, t: TFunction): ChartPoint[] {
   const points: (ChartPoint | undefined)[] = [
-    trend.avg30 ? { label: '30 j', value: trend.avg30 } : undefined,
-    trend.avg7 ? { label: '7 j', value: trend.avg7 } : undefined,
-    trend.avg1 ? { label: '1 j', value: trend.avg1 } : undefined,
+    trend.avg30 ? { label: t('priceTrend.days30'), value: trend.avg30 } : undefined,
+    trend.avg7 ? { label: t('priceTrend.days7'), value: trend.avg7 } : undefined,
+    trend.avg1 ? { label: t('priceTrend.days1'), value: trend.avg1 } : undefined,
   ];
   return points.filter((point) => point !== undefined);
 }
@@ -28,18 +30,19 @@ function change(points: readonly ChartPoint[]): number | undefined {
  * figures.
  */
 export function PriceTrendCard({ trends }: { trends: readonly PriceTrend[] }) {
+  const { t } = useTranslation();
   const [selectedVariant, setSelectedVariant] = useState(trends[0]?.variant);
-  const trend = trends.find((t) => t.variant === selectedVariant) ?? trends[0];
+  const trend = trends.find((entry) => entry.variant === selectedVariant) ?? trends[0];
   // Same points from one render to the next, so the chart only replays its animation when the trend changes.
-  const points = useMemo(() => (trend ? chartPoints(trend) : []), [trend]);
+  const points = useMemo(() => (trend ? chartPoints(trend, t) : []), [trend, t]);
 
   if (!trend) {
     return (
       <View style={styles.card}>
         <Text variant="overline" tone="muted">
-          Tendance du prix
+          {t('priceTrend.title')}
         </Text>
-        <Text tone="muted">Pas encore de ventes suivies sur Cardmarket pour cette carte.</Text>
+        <Text tone="muted">{t('priceTrend.noSales')}</Text>
       </View>
     );
   }
@@ -55,14 +58,18 @@ export function PriceTrendCard({ trends }: { trends: readonly PriceTrend[] }) {
       <View style={styles.header}>
         <View style={styles.headline}>
           <Text variant="overline" tone="muted">
-            Tendance du prix
+            {t('priceTrend.title')}
           </Text>
           <Text variant="title">{formatEuros(trend.trend ?? points.at(-1)!.value)}</Text>
         </View>
         {delta !== undefined && (
           <View style={[styles.badge, { backgroundColor: rising ? colors.successSoft : colors.dangerSoft }]}>
             <Text variant="caption" style={{ color: lineColor }}>
-              {rising ? '▲' : '▼'} {Math.abs(Math.round(delta * 100))} % sur {period}
+              {t('priceTrend.change', {
+                arrow: rising ? '▲' : '▼',
+                percent: Math.abs(Math.round(delta * 100)),
+                period,
+              })}
             </Text>
           </View>
         )}
@@ -70,12 +77,12 @@ export function PriceTrendCard({ trends }: { trends: readonly PriceTrend[] }) {
 
       {trends.length > 1 && (
         <View style={styles.chips}>
-          {trends.map((t) => (
+          {trends.map((entry) => (
             <Chip
-              key={t.variant}
-              label={VARIANT_LABELS[t.variant]}
-              selected={t.variant === trend.variant}
-              onPress={() => setSelectedVariant(t.variant)}
+              key={entry.variant}
+              label={t(`variants.${entry.variant}`)}
+              selected={entry.variant === trend.variant}
+              onPress={() => setSelectedVariant(entry.variant)}
             />
           ))}
         </View>
@@ -86,16 +93,15 @@ export function PriceTrendCard({ trends }: { trends: readonly PriceTrend[] }) {
       )}
 
       <View style={styles.stats}>
-        <Stat label="Tendance" value={trend.trend} />
-        <Stat label="Prix le plus bas" value={trend.low} />
-        <Stat label="Moyenne 30 j" value={trend.avg30} />
-        <Stat label="Moyenne 7 j" value={trend.avg7} />
-        <Stat label="Moyenne 1 j" value={trend.avg1} />
+        <Stat label={t('priceTrend.trend')} value={trend.trend} />
+        <Stat label={t('priceTrend.low')} value={trend.low} />
+        <Stat label={t('priceTrend.avg30')} value={trend.avg30} />
+        <Stat label={t('priceTrend.avg7')} value={trend.avg7} />
+        <Stat label={t('priceTrend.avg1')} value={trend.avg1} />
       </View>
 
       <Text variant="caption" tone="faint">
-        Ce n’est pas un historique jour par jour : la courbe relie les moyennes des ventes Cardmarket sur 30, 7 et 1
-        jour(s), toutes langues et tous états confondus. Prix indicatifs, pas des prix de vente réels.
+        {t('priceTrend.notice')}
       </Text>
     </View>
   );

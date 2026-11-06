@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { Button, Text, TextField, colors, radius, spacing } from '@/ui';
@@ -23,6 +24,7 @@ function secretOf(totpUri: string): string {
  * a first code, and the backup codes are shown only once that code proves the app works.
  */
 export function TwoFactorSetup() {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [pending, setPending] = useState<PendingSetup>();
@@ -50,7 +52,7 @@ export function TwoFactorSetup() {
     try {
       await Linking.openURL(pending.totpUri);
     } catch {
-      setError('Aucune application d’authentification trouvée. Installes-en une, ou recopie la clé ci-dessous.');
+      setError(t('account.noAuthenticator'));
     }
   };
 
@@ -58,11 +60,10 @@ export function TwoFactorSetup() {
     return (
       <View style={styles.block}>
         <Text variant="heading" style={{ color: colors.success }}>
-          ✓ Validation en deux étapes activée
+          {t('account.twoFactorDone')}
         </Text>
         <Text variant="caption" tone="muted">
-          Note ces codes de secours en lieu sûr. Ils te permettent de te connecter si tu perds ton téléphone, et ils ne
-          seront plus affichés.
+          {t('account.backupCodesNotice')}
         </Text>
         <View style={styles.codes}>
           {finishedCodes.map((backupCode) => (
@@ -79,17 +80,17 @@ export function TwoFactorSetup() {
     return (
       <View style={styles.block}>
         <Text variant="caption" tone="muted">
-          Ajoute Holo à ton application d’authentification (Google Authenticator, Authy…), puis saisis le code affiché.
+          {t('account.addToAuthenticator')}
         </Text>
-        <Button label="Ouvrir mon application" variant="secondary" onPress={openAuthenticator} />
+        <Button label={t('account.openAuthenticator')} variant="secondary" onPress={openAuthenticator} />
         <Text variant="caption" tone="faint">
-          Ou recopie cette clé :
+          {t('account.copyKey')}
         </Text>
         <Text selectable style={styles.code}>
           {secretOf(pending.totpUri)}
         </Text>
         <TextField
-          label="Code à 6 chiffres"
+          label={t('account.sixDigitCode')}
           value={code}
           onChangeText={setCode}
           keyboardType="number-pad"
@@ -97,7 +98,7 @@ export function TwoFactorSetup() {
           textContentType="oneTimeCode"
         />
         <FormError message={error} />
-        <Button label={busy ? 'Un instant…' : 'Activer'} disabled={busy || !code.trim()} onPress={confirm} />
+        <Button label={busy ? t('common.wait') : t('account.enable')} disabled={busy || !code.trim()} onPress={confirm} />
       </View>
     );
   }
@@ -105,10 +106,10 @@ export function TwoFactorSetup() {
   return (
     <View style={styles.block}>
       <Text variant="caption" tone="muted">
-        En plus de ton mot de passe, un code temporaire sera demandé à chaque connexion.
+        {t('account.twoFactorStart')}
       </Text>
       <TextField
-        label="Mot de passe actuel"
+        label={t('account.currentPassword')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -116,7 +117,7 @@ export function TwoFactorSetup() {
         textContentType="password"
       />
       <FormError message={error} />
-      <Button label={busy ? 'Un instant…' : 'Continuer'} disabled={busy || !password} onPress={start} />
+      <Button label={busy ? t('common.wait') : t('common.continue')} disabled={busy || !password} onPress={start} />
     </View>
   );
 }

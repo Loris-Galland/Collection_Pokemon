@@ -45,7 +45,10 @@ Ce qu'un utilisateur possède d'une même carte dans une variante, une langue et
 _À éviter_ : possession, item, carte possédée
 
 **Langue** :
-La langue d'impression d'un exemplaire (français, anglais). Elle ne change pas la carte : un Dracaufeu 006/165 en VF et en VO est la même carte.
+La langue d'impression d'un exemplaire (français, anglais, japonais, coréen…). Elle ne change pas la carte : un Dracaufeu 006/165 en VF et en VO est la même carte.
+
+**Langue du catalogue** :
+La langue dans laquelle l'appli affiche les noms et les aperçus des cartes. Seules les langues du catalogue international sont possibles (français, anglais, allemand, espagnol, italien, portugais), car les cartes asiatiques appartiennent à d'autres extensions. Elle ne change pas la langue des exemplaires.
 
 **État** :
 La condition physique d'un exemplaire, sur l'échelle Cardmarket : Mint, Near Mint, Excellent, Good, Light Played, Played, Poor.
@@ -74,11 +77,11 @@ La suite des relevés d'un utilisateur, affichée sous forme de courbe.
 _À éviter_ : historique, graphique
 
 **Liste d'envies** :
-Les cartes qu'un utilisateur veut obtenir. Une carte ajoutée à la collection sort automatiquement de la liste.
-_À éviter_ : wishlist, recherches, liste de souhaits
+Une liste que l'utilisateur crée et nomme (ex. « Deck feu », « Pour Noël ») pour ranger ses envies. Il peut en avoir plusieurs. Supprimer une liste supprime ses envies.
+_À éviter_ : wishlist, recherches, liste de souhaits, collection d'envies (« collection » est réservé aux exemplaires)
 
 **Envie** :
-Une carte de la liste d'envies. Elle porte sur la carte, pas sur une variante ni une langue : posséder la carte, dans n'importe quelle variante, suffit à l'exaucer.
+Une carte qu'un utilisateur veut obtenir, rangée dans une seule liste d'envies à la fois. Elle porte sur la carte, pas sur une variante ni une langue : posséder la carte, dans n'importe quelle variante, suffit à l'exaucer, et elle sort alors automatiquement de sa liste.
 
 **Classeur** :
 La présentation d'une extension sous forme de classeur de 9 cartes par page, les cartes manquantes apparaissant en grisé.

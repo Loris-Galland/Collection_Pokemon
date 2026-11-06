@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar, ProfileIcon, colors } from '@/ui';
@@ -12,12 +13,13 @@ function AccountAvatar({ userId, name, size }: { userId: string; name: string; s
 
 /** Profile picture that opens the account, or the sign in screen for a visitor. */
 export function ProfileButton({ size = 40 }: { size?: number }) {
+  const { t } = useTranslation();
   const { user } = useAccount();
   const circle = { width: size, height: size, borderRadius: size / 2 };
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={user ? 'Mon compte' : 'Se connecter'}
+      accessibilityLabel={user ? t('account.myAccount') : t('account.signIn')}
       hitSlop={8}
       onPress={() => router.push(user ? '/account/security' : '/sign-in')}
       style={({ pressed }) => pressed && styles.pressed}>

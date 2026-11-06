@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet } from 'react-native';
 
 import { DeleteAccountSection, TwoFactorSection } from '@/features/account/account-security-sections';
@@ -7,15 +8,16 @@ import { KeyboardScrollView, StateView, colors, spacing } from '@/ui';
 
 /** The account, meaning the profile, the data export, two-factor authentication and deletion. */
 export default function SecurityScreen() {
+  const { t } = useTranslation();
   const { user } = useAccount();
   const { hasPassword, failed, retry } = useHasPassword();
 
   if (failed) {
     return (
       <StateView
-        title="Compte indisponible"
-        message="Vérifie ta connexion, puis réessaie."
-        actionLabel="Réessayer"
+        title={t('account.unavailable')}
+        message={t('common.checkConnection')}
+        actionLabel={t('common.retry')}
         onAction={retry}
       />
     );

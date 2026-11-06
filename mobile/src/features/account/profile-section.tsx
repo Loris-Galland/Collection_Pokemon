@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Share, StyleSheet, View } from 'react-native';
 
 import { useCopies } from '@/features/collection/collection-provider';
@@ -21,6 +22,7 @@ interface ProfileUser {
 
 /** Changes the pseudo. The email stays fixed until addresses can be verified by email. */
 export function ProfileSection({ user }: { user: ProfileUser }) {
+  const { t } = useTranslation();
   const [name, setName] = useState(user.name);
   const [saved, setSaved] = useState(false);
   const { error, busy, send } = useAccountRequest();
@@ -36,13 +38,13 @@ export function ProfileSection({ user }: { user: ProfileUser }) {
 
   return (
     <View style={styles.section}>
-      <Text variant="heading">Mon profil</Text>
+      <Text variant="heading">{t('account.profile')}</Text>
       <AvatarPicker userId={user.id} name={user.name} />
       <Text variant="caption" tone="muted">
         {user.email}
       </Text>
       <TextField
-        label="Pseudo"
+        label={t('account.pseudo')}
         value={name}
         onChangeText={(value) => {
           setName(value);
@@ -55,11 +57,11 @@ export function ProfileSection({ user }: { user: ProfileUser }) {
       <FormError message={error} />
       {saved && (
         <Text variant="caption" style={{ color: colors.success }}>
-          ✓ Pseudo enregistré
+          {t('account.pseudoSaved')}
         </Text>
       )}
       <Button
-        label={busy ? 'Un instant…' : 'Enregistrer'}
+        label={busy ? t('common.wait') : t('common.save')}
         variant="secondary"
         disabled={busy || !trimmed || trimmed === user.name}
         onPress={save}
@@ -70,8 +72,9 @@ export function ProfileSection({ user }: { user: ProfileUser }) {
 
 /** Gives the user a copy of their data, as JSON, through the share sheet of the phone. */
 export function ExportSection({ user }: { user: ProfileUser }) {
+  const { t } = useTranslation();
   const copies = useCopies();
-  const { wishlist } = useWishlist();
+  const { wishlists, wishes } = useWishlist();
   const [failed, setFailed] = useState(false);
 
   const exportData = async () => {
@@ -88,9 +91,10 @@ export function ExportSection({ user }: { user: ProfileUser }) {
           avatarJpegBase64: await loadAvatar(user.id),
         },
         collection: copies,
-        wishlist,
+        wishlists,
+        wishes,
       };
-      await Share.share({ title: 'Mes données Holo', message: JSON.stringify(data, null, 2) });
+      await Share.share({ title: t('account.exportTitle'), message: JSON.stringify(data, null, 2) });
     } catch {
       setFailed(true);
     }
@@ -98,12 +102,12 @@ export function ExportSection({ user }: { user: ProfileUser }) {
 
   return (
     <View style={styles.section}>
-      <Text variant="heading">Mes données</Text>
+      <Text variant="heading">{t('account.myData')}</Text>
       <Text variant="caption" tone="muted">
-        Récupère une copie de ton compte, de ta photo, de ta collection et de tes envies au format JSON.
+        {t('account.exportText')}
       </Text>
-      {failed && <FormError message="L’export n’a pas pu se faire. Vérifie ta connexion, puis réessaie." />}
-      <Button label="Exporter mes données" variant="secondary" onPress={exportData} />
+      {failed && <FormError message={t('account.exportFailed')} />}
+      <Button label={t('account.export')} variant="secondary" onPress={exportData} />
     </View>
   );
 }

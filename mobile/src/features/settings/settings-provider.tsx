@@ -1,6 +1,8 @@
-import { isLanguage, type Language } from '@collection/shared';
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { isCatalogLanguage, type CatalogLanguage } from '@collection/shared';
+import { getLocales } from 'expo-localization';
+import { createContext, useContext, useLayoutEffect, useMemo, type ReactNode } from 'react';
 
+import { applyAppLanguage, deviceLanguage, isAppLanguage, type AppLanguage } from '@/i18n';
 import { usePersistentState } from '@/lib/storage';
 
 const STORAGE_KEY = 'settings/v1';
@@ -8,34 +10,57 @@ const STORAGE_KEY = 'settings/v1';
 /** How the catalog shows the sets, small in a grid or as large cards. */
 export type SetDisplay = 'grid' | 'large';
 
+/** The app language, or the one of the phone. */
+export type AppLanguageChoice = AppLanguage | 'system';
+
 interface Settings {
-  /** Display language of the catalog, used for card names and previews. */
-  language: Language;
+  /** Language of the catalog, used for card names and previews. */
+  catalogLanguage: CatalogLanguage;
+  appLanguage: AppLanguageChoice;
   setDisplay: SetDisplay;
 }
 
 interface SettingsContextValue extends Settings {
-  setLanguage: (language: Language) => void;
+  setCatalogLanguage: (language: CatalogLanguage) => void;
+  setAppLanguage: (language: AppLanguageChoice) => void;
   setSetDisplay: (setDisplay: SetDisplay) => void;
 }
 
-const DEFAULT_SETTINGS: Settings = { language: 'fr', setDisplay: 'grid' };
+/** The catalog starts in the language of the phone when it exists, in English otherwise. */
+function defaultCatalogLanguage(): CatalogLanguage {
+  const code = getLocales()[0]?.languageCode;
+  return isCatalogLanguage(code) ? code : 'en';
+}
 
-const restoreSettings = (value: unknown): Settings | undefined =>
-  typeof value === 'object' && value !== null && isLanguage((value as Record<string, unknown>).language)
-    ? { language: (value as Settings).language, setDisplay: (value as Settings).setDisplay === 'large' ? 'large' : 'grid' }
-    : undefined;
+const DEFAULT_SETTINGS: Settings = { catalogLanguage: defaultCatalogLanguage(), appLanguage: 'system', setDisplay: 'grid' };
+
+const restoreSettings = (value: unknown): Settings | undefined => {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const saved = value as Record<string, unknown>;
+  // Version 1 called the catalog language `language`.
+  const catalogLanguage = saved.catalogLanguage ?? saved.language;
+  return {
+    catalogLanguage: isCatalogLanguage(catalogLanguage) ? catalogLanguage : DEFAULT_SETTINGS.catalogLanguage,
+    appLanguage: isAppLanguage(saved.appLanguage) ? saved.appLanguage : 'system',
+    setDisplay: saved.setDisplay === 'large' ? 'large' : 'grid',
+  };
+};
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
-/** Loads the settings on startup and saves them after every change. */
+/** Loads the settings on startup, applies the app language and saves the settings after every change. */
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings, loaded] = usePersistentState(STORAGE_KEY, DEFAULT_SETTINGS, restoreSettings);
+
+  // A layout effect runs before the screen is painted, so no screen shows a text in the previous language.
+  const appLanguage = loaded && settings.appLanguage !== 'system' ? settings.appLanguage : deviceLanguage();
+  useLayoutEffect(() => applyAppLanguage(appLanguage), [appLanguage]);
 
   const value = useMemo(
     () => ({
       ...settings,
-      setLanguage: (language: Language) => setSettings((s) => ({ ...s, language })),
+      setCatalogLanguage: (catalogLanguage: CatalogLanguage) => setSettings((s) => ({ ...s, catalogLanguage })),
+      setAppLanguage: (appLanguage: AppLanguageChoice) => setSettings((s) => ({ ...s, appLanguage })),
       setSetDisplay: (setDisplay: SetDisplay) => setSettings((s) => ({ ...s, setDisplay })),
     }),
     [settings, setSettings],

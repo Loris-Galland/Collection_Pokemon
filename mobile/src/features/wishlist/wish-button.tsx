@@ -1,55 +1,55 @@
-import { StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { useRequireAccount } from '@/features/account/use-account';
-import { PressableScale, Text, colors, radius, spacing } from '@/ui';
+import { ChevronIcon, HeartButton, Text, colors, radius, spacing } from '@/ui';
 
-import { useWishlist, useWishlistActions } from './wishlist-provider';
+import { useWishPicker, type WishCard } from './wish-picker';
+import { useWishlist } from './wishlist-provider';
 
-/** Adds a card to the wishlist or removes it. The heart bounces when a card is added. */
-export function WishButton({ cardId, setId }: { cardId: string; setId: string }) {
-  const { isWished } = useWishlist();
-  const { toggle } = useWishlistActions();
-  const requireAccount = useRequireAccount();
-  const wished = isWished(cardId);
-  const pop = useSharedValue(1);
-  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.get() }] }));
+/**
+ * Heart of the card screen, with the list the card is in. The heart adds or removes the card, and the label opens the
+ * lists to move it.
+ */
+export function WishButton({ card }: { card: WishCard }) {
+  const { t } = useTranslation();
+  const { wishOf, wishlists } = useWishlist();
+  const { toggle, choose } = useWishPicker();
+  const wish = wishOf(card.id);
+  const list = wish && wishlists.find((entry) => entry.id === wish.wishlistId);
 
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityState={{ selected: wished }}
-      onPress={() => {
-        if (wished) {
-          toggle(cardId, setId);
-          return;
+    <View style={[styles.pill, wish && styles.wished]}>
+      <HeartButton
+        filled={wish !== undefined}
+        size={36}
+        accessibilityLabel={
+          list ? t('wishlist.wishedLabel', { name: card.name, list: list.name }) : t('wishlist.addLabel', { name: card.name })
         }
-        requireAccount(() => {
-          pop.set(withSequence(withSpring(1.45, { duration: 160 }), withSpring(1, { damping: 8 })));
-          toggle(cardId, setId);
-        });
-      }}
-      style={[styles.button, wished && styles.wished]}>
-      <Animated.View style={heartStyle}>
-        <Text variant="heading" style={{ color: wished ? colors.wish : colors.textMuted }}>
-          {wished ? '♥' : '♡'}
+        onPress={() => toggle(card)}
+        onLongPress={() => choose(card)}
+      />
+      <Pressable
+        accessibilityRole="button"
+        hitSlop={6}
+        onPress={() => (wish ? choose(card) : toggle(card))}
+        style={({ pressed }) => [styles.label, pressed && styles.pressed]}>
+        <Text variant="caption" numberOfLines={1} style={{ color: wish ? colors.text : colors.textMuted }}>
+          {list ? t('wishlist.inList', { name: list.name }) : t('wishlist.save')}
         </Text>
-      </Animated.View>
-      <Text variant="caption" style={{ color: wished ? colors.text : colors.textMuted }}>
-        {wished ? 'Dans mes envies' : 'Ajouter à mes envies'}
-      </Text>
-    </PressableScale>
+        {wish && <ChevronIcon color={colors.textMuted} size={14} />}
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md + 2,
-    paddingVertical: spacing.sm,
+    maxWidth: '100%',
+    paddingLeft: spacing.xs,
+    paddingRight: spacing.md + 2,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
@@ -58,5 +58,15 @@ const styles = StyleSheet.create({
   wished: {
     borderColor: 'rgba(255, 107, 157, 0.45)',
     backgroundColor: 'rgba(255, 107, 157, 0.12)',
+  },
+  label: {
+    flexShrink: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

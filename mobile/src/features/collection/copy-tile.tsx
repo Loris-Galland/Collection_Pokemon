@@ -1,12 +1,12 @@
 import {
   CONDITION_ABBREVIATIONS,
   CONDITION_LABELS,
-  VARIANT_LABELS,
   type Card,
   type Condition,
   type Copy,
 } from '@collection/shared';
 import { Link } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { CardImage } from '@/features/catalog/card-image';
@@ -35,11 +35,18 @@ interface CopyTileProps {
 /** An owned copy on the collection screen, with its price at the top left and its condition at the bottom right. */
 export function CopyTile({ copy, card, price }: CopyTileProps) {
   const name = card?.name ?? copy.cardId;
-  const priceLabel = price === undefined ? 'Prix inconnu' : formatEuros(price);
+  const { t } = useTranslation();
+  const priceLabel = price === undefined ? t('common.unknownPrice') : formatEuros(price);
   return (
     <Link href={{ pathname: '/card/[cardId]', params: { cardId: copy.cardId } }} asChild>
       <PressableScale
-        accessibilityLabel={`${name}, ${VARIANT_LABELS[copy.variant]}, ${CONDITION_LABELS[copy.condition]}, ${priceLabel}, quantité ${copy.quantity}`}>
+        accessibilityLabel={t('collection.copyLabel', {
+          name,
+          variant: t(`variants.${copy.variant}`),
+          condition: CONDITION_LABELS[copy.condition],
+          price: priceLabel,
+          quantity: copy.quantity,
+        })}>
         <CardImage imageUrl={card?.imageUrl} quality="low" label={name} />
         <View style={[styles.badge, styles.topLeft]}>
           <Text variant="overline" style={price === undefined ? styles.unknownPrice : styles.price}>

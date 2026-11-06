@@ -1,5 +1,6 @@
 import { countOwnedQuantities, type Copy } from '@collection/shared';
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { adoptLegacyData, collectionKey } from '@/features/account/local-data';
 import { useAccount } from '@/features/account/use-account';
@@ -70,13 +71,14 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
 }
 
 function AvailableCollection({ store, children }: { store: CollectionStore; children: ReactNode }) {
+  const { t } = useTranslation();
   const status = useSelected(store, (state) => state.status);
   if (status === 'unavailable') {
     return (
       <StateView
-        title="Collection indisponible"
-        message="Ta collection n’a pas pu être chargée. Vérifie ta connexion, puis réessaie."
-        actionLabel="Réessayer"
+        title={t('collection.unavailable')}
+        message={t('collection.loadFailed')}
+        actionLabel={t('common.retry')}
         onAction={store.load}
       />
     );

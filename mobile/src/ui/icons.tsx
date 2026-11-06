@@ -79,6 +79,59 @@ export function ProfileIcon({ color, size = 18 }: IconProps) {
   );
 }
 
+export function ChevronIcon({ color, size = 18 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Polyline points="9 6 15 12 9 18" />
+    </Svg>
+  );
+}
+
+export function CheckIcon({ color, size = 18 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+      <Polyline points="5 12.5 10 17.5 19 7" />
+    </Svg>
+  );
+}
+
+export function PlusIcon({ color, size = 18 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
+      <Line x1={12} y1={5} x2={12} y2={19} />
+      <Line x1={5} y1={12} x2={19} y2={12} />
+    </Svg>
+  );
+}
+
+export function MoreIcon({ color, size = 18 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <Circle cx={5} cy={12} r={1.8} />
+      <Circle cx={12} cy={12} r={1.8} />
+      <Circle cx={19} cy={12} r={1.8} />
+    </Svg>
+  );
+}
+
+/** Path of a heart in a 24 × 24 box, shared by the outline and the filled heart so they line up exactly. */
+export const HEART_PATH =
+  'M12 20.5s-7.5-4.6-9.3-9.3C1.5 8 3.4 4.5 7 4.5c2.1 0 3.7 1.2 5 3 1.3-1.8 2.9-3 5-3 3.6 0 5.5 3.5 4.3 6.7-1.8 4.7-9.3 9.3-9.3 9.3Z';
+
+export function HeartIcon({ color, size = 18, filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d={HEART_PATH}
+        fill={filled ? color : 'none'}
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 export function PencilIcon({ color, size = 18 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

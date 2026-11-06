@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet } from 'react-native';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
@@ -10,6 +11,7 @@ const SAVE_ERROR_DURATION_MS = 6000;
 
 /** Tells the user why the collection cannot be changed, or that the last change was undone. */
 export function CollectionNotice() {
+  const { t } = useTranslation();
   const readOnly = useCollectionStatus() === 'read-only';
   const { saveFailed, dismiss } = useCollectionSaveError();
 
@@ -23,7 +25,7 @@ export function CollectionNotice() {
     return (
       <Animated.View entering={FadeInDown.springify()} exiting={FadeOut} style={[styles.notice, styles.error]}>
         <Text variant="caption" style={{ color: colors.danger }}>
-          Ta modification n’a pas pu être enregistrée. Réessaie dans un instant.
+          {t('collection.saveFailed')}
         </Text>
       </Animated.View>
     );
@@ -32,7 +34,7 @@ export function CollectionNotice() {
     return (
       <Animated.View entering={FadeInDown.springify()} style={styles.notice}>
         <Text variant="caption" tone="muted">
-          Hors connexion, ta collection est en consultation seule. Reconnecte-toi pour la modifier.
+          {t('collection.readOnly')}
         </Text>
       </Animated.View>
     );

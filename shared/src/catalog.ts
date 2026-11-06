@@ -1,23 +1,80 @@
 // The catalog, meaning what exists regardless of who owns it.
 
-export type Language = 'fr' | 'en';
+/** Print language of a copy. Every language TCGdex knows, so any copy can be described. */
+export type Language =
+  | 'fr'
+  | 'en'
+  | 'de'
+  | 'es'
+  | 'it'
+  | 'pt'
+  | 'nl'
+  | 'pl'
+  | 'ru'
+  | 'ja'
+  | 'ko'
+  | 'zh-tw'
+  | 'zh-cn'
+  | 'th'
+  | 'id';
 
-export const LANGUAGES: readonly Language[] = ['fr', 'en'];
+export const LANGUAGES: readonly Language[] = [
+  'fr',
+  'en',
+  'de',
+  'es',
+  'it',
+  'pt',
+  'nl',
+  'pl',
+  'ru',
+  'ja',
+  'ko',
+  'zh-tw',
+  'zh-cn',
+  'th',
+  'id',
+];
 
-export const LANGUAGE_LABELS: Record<Language, string> = { fr: 'Français', en: 'Anglais' };
+/** Name of each language written in that language, shown next to the translated name. */
+export const LANGUAGE_NATIVE_NAMES: Record<Language, string> = {
+  fr: 'Français',
+  en: 'English',
+  de: 'Deutsch',
+  es: 'Español',
+  it: 'Italiano',
+  pt: 'Português',
+  nl: 'Nederlands',
+  pl: 'Polski',
+  ru: 'Русский',
+  ja: '日本語',
+  ko: '한국어',
+  'zh-tw': '繁體中文',
+  'zh-cn': '简体中文',
+  th: 'ไทย',
+  id: 'Bahasa Indonesia',
+};
 
 export function isLanguage(value: unknown): value is Language {
   return LANGUAGES.includes(value as Language);
 }
 
+/**
+ * Languages of the international catalog, where a card keeps the same id and number in every language. Asian cards
+ * belong to other sets, so their catalog is a separate one.
+ */
+export type CatalogLanguage = 'fr' | 'en' | 'de' | 'es' | 'it' | 'pt';
+
+export const CATALOG_LANGUAGES: readonly CatalogLanguage[] = ['fr', 'en', 'de', 'es', 'it', 'pt'];
+
+export function isCatalogLanguage(value: unknown): value is CatalogLanguage {
+  return CATALOG_LANGUAGES.includes(value as CatalogLanguage);
+}
+
 export type Variant = 'normal' | 'holo' | 'reverse' | 'first-edition';
 
-export const VARIANT_LABELS: Record<Variant, string> = {
-  normal: 'Normale',
-  holo: 'Holo',
-  reverse: 'Reverse holo',
-  'first-edition': '1re édition',
-};
+/** Every variant. Their names are translated by the app. */
+export const VARIANTS: readonly Variant[] = ['normal', 'holo', 'reverse', 'first-edition'];
 
 /** The variant to add when several cards are added at once, the first one the card has when it lacks the wanted one. */
 export function pickVariant(available: readonly Variant[], preferred: Variant): Variant {
@@ -25,7 +82,7 @@ export function pickVariant(available: readonly Variant[], preferred: Variant): 
 }
 
 export function isVariant(value: unknown): value is Variant {
-  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(VARIANT_LABELS, value);
+  return VARIANTS.includes(value as Variant);
 }
 
 /** TCG Pocket is a phone game, so its cards cannot be part of a physical collection. Its set ids look like A1a or P-A. */

@@ -2,6 +2,7 @@ import { computeSetProgress } from '@collection/shared';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { useRequireAccount } from '@/features/account/use-account';
@@ -9,6 +10,8 @@ import { CardTile } from '@/features/catalog/card-tile';
 import { useSet } from '@/features/catalog/hooks';
 import { BulkAddPanel } from '@/features/collection/bulk-add-panel';
 import { useCollectionStatus, useCopies, useOwnedQuantities } from '@/features/collection/collection-provider';
+import { useWishPicker } from '@/features/wishlist/wish-picker';
+import { useWishlist } from '@/features/wishlist/wishlist-provider';
 import { formatPercent } from '@/lib/format';
 import { Button, ProgressBar, StateView, Text, Toast, colors, spacing, useToast } from '@/ui';
 
@@ -16,19 +19,22 @@ const COLUMNS = 3;
 // Keeps the last cards reachable above the panel of the selection.
 const SELECTION_PANEL_ROOM = 160;
 
-const cardsLabel = (count: number) => `${count} carte${count > 1 ? 's' : ''}`;
-
 /** Set screen with all of its cards, missing ones greyed out, and the progress. It will become the binder. */
 export default function SetScreen() {
+  const { t } = useTranslation();
   const { setId } = useLocalSearchParams<{ setId: string }>();
   const { data, error, retry } = useSet(setId);
   const copies = useCopies();
   const owned = useOwnedQuantities();
   const readOnly = useCollectionStatus() === 'read-only';
   const requireAccount = useRequireAccount();
+  const { wishes } = useWishlist();
+  const { toggle: toggleWish, choose: chooseWishlist } = useWishPicker();
   const { toast, showToast } = useToast();
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+
+  const wishedIds = useMemo(() => new Set(wishes.map((wish) => wish.cardId)), [wishes]);
 
   const stopSelecting = () => {
     setSelecting(false);
@@ -62,9 +68,9 @@ export default function SetScreen() {
   if (error) {
     return (
       <StateView
-        title="Extension introuvable"
-        message="Vérifie ta connexion, puis réessaie."
-        actionLabel="Réessayer"
+        title={t('set.notFound')}
+        message={t('common.checkConnection')}
+        actionLabel={t('common.retry')}
         onAction={retry}
       />
     );
@@ -83,7 +89,7 @@ export default function SetScreen() {
         numColumns={COLUMNS}
         style={styles.screen}
         contentContainerStyle={[styles.grid, selecting && { paddingBottom: SELECTION_PANEL_ROOM }]}
-        extraData={selectedIds}
+        extraData={[selectedIds, wishedIds]}
         initialNumToRender={4}
         maxToRenderPerBatch={4}
         windowSize={5}
@@ -96,11 +102,13 @@ export default function SetScreen() {
                 {progress.owned}/{progress.total}
               </Text>
               <Text variant="caption" tone="muted">
-                {formatPercent(progress.ratio)} · {set.cardCount.total - set.cardCount.official} secrètes
+                {formatPercent(progress.ratio)} · {t('set.secrets', { count: set.cardCount.total - set.cardCount.official })}
               </Text>
             </View>
             <ProgressBar ratio={progress.ratio} />
-            {!readOnly && !selecting && <Button label="Ajouter plusieurs cartes" variant="secondary" onPress={() => startSelecting()} />}
+            {!readOnly && !selecting && (
+              <Button label={t('set.addSeveral')} variant="secondary" onPress={() => startSelecting()} />
+            )}
           </View>
         }
         renderItem={({ item }) => (
@@ -112,6 +120,9 @@ export default function SetScreen() {
               selected={selectedIds.has(item.id)}
               onToggleSelected={toggleSelected}
               onStartSelecting={readOnly ? undefined : startSelecting}
+              wished={wishedIds.has(item.id)}
+              onToggleWish={toggleWish}
+              onChooseWishlist={chooseWishlist}
             />
           </View>
         )}
@@ -124,8 +135,8 @@ export default function SetScreen() {
           onDone={(addedCount, failedIds) => {
             showToast(
               failedIds.length > 0
-                ? `${cardsLabel(addedCount)} ajoutée${addedCount > 1 ? 's' : ''}. ${cardsLabel(failedIds.length)} à réessayer.`
-                : `${cardsLabel(addedCount)} ajoutée${addedCount > 1 ? 's' : ''} à ta collection`,
+                ? t('set.addedWithFailures', { count: addedCount, failed: t('common.cards', { count: failedIds.length }) })
+                : t('set.added', { count: addedCount }),
             );
             if (failedIds.length > 0) setSelectedIds(new Set(failedIds));
             else stopSelecting();

@@ -2,8 +2,12 @@ import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import '@/i18n';
 
 import { CollectionProvider } from '@/features/collection/collection-provider';
+import { WishPickerProvider } from '@/features/wishlist/wish-picker';
 import { WishlistProvider } from '@/features/wishlist/wishlist-provider';
 import { SettingsProvider } from '@/features/settings/settings-provider';
 import { colors } from '@/ui';
@@ -24,6 +28,7 @@ const navigationTheme = {
 
 /** App root that wires the theme, settings, collection and navigation. */
 export default function RootLayout() {
+  const { t } = useTranslation();
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
@@ -34,6 +39,7 @@ export default function RootLayout() {
       <SettingsProvider>
         <CollectionProvider>
           <WishlistProvider>
+            <WishPickerProvider>
             <Stack
               screenOptions={{
                 headerTintColor: colors.text,
@@ -47,9 +53,11 @@ export default function RootLayout() {
               <Stack.Screen name="card/[cardId]" options={{ title: '' }} />
               <Stack.Screen name="sign-in" options={{ title: '', presentation: 'modal' }} />
               <Stack.Screen name="two-factor" options={{ title: '', presentation: 'modal' }} />
-              <Stack.Screen name="account/security" options={{ title: 'Mon compte' }} />
+              <Stack.Screen name="account/security" options={{ title: t('account.myAccount') }} />
+              <Stack.Screen name="wishlists/[wishlistId]" options={{ title: '' }} />
               <Stack.Screen name="privacy" options={{ title: '' }} />
             </Stack>
+            </WishPickerProvider>
           </WishlistProvider>
         </CollectionProvider>
       </SettingsProvider>

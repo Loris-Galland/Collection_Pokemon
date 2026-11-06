@@ -1,5 +1,6 @@
 import { computeAllSetProgress, priceKey, summarizeCollection, type Copy } from '@collection/shared';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,6 +14,7 @@ import { MAX_CONTENT_WIDTH, Text, WEB_TAB_BAR_OFFSET, colors, radius, spacing, u
 
 /** Collection screen with the collection value, key figures, progress per set and every owned copy. */
 export default function CollectionScreen() {
+  const { t } = useTranslation();
   const copies = useCopies();
   const { data: sets } = useSets();
   const { value, valueTrend, cards, prices, loading } = useCollectionValue();
@@ -53,21 +55,19 @@ export default function CollectionScreen() {
         columnWrapperStyle={columns > 1 ? styles.row : undefined}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text variant="display">Collection</Text>
+            <Text variant="display">{t('collection.title')}</Text>
 
             <CollectionValueCard value={value} valueTrend={valueTrend} loading={loading} />
 
             <View style={styles.stats}>
-              <Stat label="Exemplaires" value={copyCount} />
-              <Stat label="Cartes distinctes" value={distinctCardCount} />
-              <Stat label="Extensions" value={startedSets.length} />
+              <Stat label={t('collection.copies')} value={copyCount} />
+              <Stat label={t('collection.distinctCards')} value={distinctCardCount} />
+              <Stat label={t('collection.sets')} value={startedSets.length} />
             </View>
 
-            <Text variant="title">Progression</Text>
+            <Text variant="title">{t('collection.progress')}</Text>
             {startedSets.length === 0 ? (
-              <Text tone="muted">
-                Ta collection est vide. Ouvre une extension dans le Catalogue et ajoute tes premières cartes.
-              </Text>
+              <Text tone="muted">{t('collection.empty')}</Text>
             ) : (
               <View style={styles.sets}>
                 {startedSets.map(({ set, progress }, index) => (
@@ -76,7 +76,7 @@ export default function CollectionScreen() {
               </View>
             )}
 
-            {copies.length > 0 && <Text variant="title">Mes exemplaires</Text>}
+            {copies.length > 0 && <Text variant="title">{t('collection.myCopies')}</Text>}
           </View>
         }
         renderItem={({ item }) => (

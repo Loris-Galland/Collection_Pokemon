@@ -1,4 +1,4 @@
-import type { Language } from '@collection/shared';
+import type { CatalogLanguage } from '@collection/shared';
 import { useEffect, useState } from 'react';
 
 import { fetchCached, useQuery } from '@/lib/use-query';
@@ -8,19 +8,19 @@ import { fetchCard, fetchSet, fetchSets, searchCards, type CardDetail } from './
 
 /** Every set, in the catalog language. */
 export function useSets() {
-  const { language } = useSettings();
+  const { catalogLanguage: language } = useSettings();
   return useQuery(`sets:${language}`, () => fetchSets(language));
 }
 
 /** A set and its cards. */
 export function useSet(setId: string) {
-  const { language } = useSettings();
+  const { catalogLanguage: language } = useSettings();
   return useQuery(`set:${language}:${setId}`, () => fetchSet(language, setId));
 }
 
 /** The details of one card. */
 export function useCard(cardId: string) {
-  const { language } = useSettings();
+  const { catalogLanguage: language } = useSettings();
   return useQuery(`card:${language}:${cardId}`, () => fetchCard(language, cardId));
 }
 
@@ -29,7 +29,7 @@ const MAX_PARALLEL_REQUESTS = 6;
 
 /** Loads each card, cache first, a few at a time. Failures are skipped. */
 export async function loadCards(
-  language: Language,
+  language: CatalogLanguage,
   cardIds: readonly string[],
   onProgress?: (doneCount: number) => void,
 ): Promise<Map<string, CardDetail>> {
@@ -57,7 +57,7 @@ export async function loadCards(
  * only loads that card.
  */
 export function useCards(cardIds: readonly string[]): { cards: Map<string, CardDetail>; loading: boolean } {
-  const { language } = useSettings();
+  const { catalogLanguage: language } = useSettings();
   const requestKey = `${language}|${[...cardIds].sort().join(',')}`;
   const [loaded, setLoaded] = useState<{ key: string; cards: Map<string, CardDetail> }>({
     key: '',
@@ -95,7 +95,7 @@ const MAX_QUERY_LENGTH = 60;
 
 /** Cards matching the query, across every set. */
 export function useCardSearch(query: string) {
-  const { language } = useSettings();
+  const { catalogLanguage: language } = useSettings();
   // A sensible query fits in a few words, so oversized input is truncated.
   const debounced = useDebouncedValue(query.trim().slice(0, MAX_QUERY_LENGTH), 300);
   const enabled = debounced.length >= CARD_SEARCH_MIN_LENGTH;

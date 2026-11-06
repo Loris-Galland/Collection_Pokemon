@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { authClient } from '@/features/account/auth-client';
-import { GOOGLE_NOT_COMPLETED_MESSAGE, MIN_PASSWORD_LENGTH } from '@/features/account/auth-errors';
+import { googleNotCompletedMessage, MIN_PASSWORD_LENGTH } from '@/features/account/auth-errors';
 import { FormError } from '@/features/account/form-error';
 import { leaveAccountScreen } from '@/features/account/use-account';
 import { useAccountRequest } from '@/features/account/use-account-request';
@@ -21,16 +22,16 @@ import {
   spacing,
 } from '@/ui';
 
-const MODES = [
-  { value: 'sign-in', label: 'Se connecter', icon: SignInIcon },
-  { value: 'create', label: 'Créer un compte', icon: CreateAccountIcon },
-] as const;
-
 // Keeps the next field and the button in view as soon as the first field is touched.
 const ROOM_FOR_THE_FORM = 240;
 
 /** Sign in or create an account, with an email and a password or with Google. */
 export default function SignInScreen() {
+  const { t } = useTranslation();
+  const modes = [
+    { value: 'sign-in', label: t('account.signIn'), icon: SignInIcon },
+    { value: 'create', label: t('account.createAccount'), icon: CreateAccountIcon },
+  ] as const;
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -56,7 +57,7 @@ export default function SignInScreen() {
       async () => {
         const session = await authClient.getSession();
         if (session.data) leaveAccountScreen();
-        else setError(GOOGLE_NOT_COMPLETED_MESSAGE);
+        else setError(googleNotCompletedMessage());
       },
     );
 
@@ -65,16 +66,12 @@ export default function SignInScreen() {
   return (
     <KeyboardScrollView style={styles.screen} contentContainerStyle={styles.content} roomUnderField={ROOM_FOR_THE_FORM}>
       <View style={styles.heading}>
-        <Text variant="display">{creating ? 'Créer un compte' : 'Connexion'}</Text>
-        <Text tone="muted">
-          {creating
-            ? 'Crée ton compte pour commencer ta collection et tes envies.'
-            : 'Retrouve ta collection et tes envies.'}
-        </Text>
+        <Text variant="display">{creating ? t('account.createAccount') : t('account.signInTitle')}</Text>
+        <Text tone="muted">{creating ? t('account.createHint') : t('account.signInHint')}</Text>
       </View>
 
       <SegmentedControl
-        options={MODES}
+        options={modes}
         value={creating ? 'create' : 'sign-in'}
         onChange={(mode) => {
           setCreating(mode === 'create');
@@ -82,24 +79,23 @@ export default function SignInScreen() {
         }}
       />
 
-      <Button label="Continuer avec Google" variant="secondary" icon={GoogleIcon} disabled={busy} onPress={signInWithGoogle} />
+      <Button label={t('account.google')} variant="secondary" icon={GoogleIcon} disabled={busy} onPress={signInWithGoogle} />
 
       <Text variant="caption" tone="faint">
-        Si c’est ta première connexion avec Google, tu confirmes avoir au moins 15 ans et avoir lu la politique de
-        confidentialité. Google nous transmet ton nom et ton e-mail.
+        {t('account.googleNotice')}
       </Text>
 
       <View style={styles.separator}>
         <View style={styles.line} />
         <Text variant="caption" tone="faint">
-          ou
+          {t('account.or')}
         </Text>
         <View style={styles.line} />
       </View>
 
       {creating && (
         <TextField
-          label="Pseudo (pas besoin de ton vrai nom)"
+          label={t('account.pseudoHint')}
           value={name}
           onChangeText={setName}
           autoCapitalize="words"
@@ -108,7 +104,7 @@ export default function SignInScreen() {
         />
       )}
       <TextField
-        label="E-mail"
+        label={t('account.email')}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -116,7 +112,7 @@ export default function SignInScreen() {
         textContentType="emailAddress"
       />
       <TextField
-        label="Mot de passe"
+        label={t('account.password')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -126,12 +122,12 @@ export default function SignInScreen() {
       />
       {creating && (
         <Text variant="caption" tone="faint">
-          Au moins {MIN_PASSWORD_LENGTH} caractères.
+          {t('account.passwordLength', { count: MIN_PASSWORD_LENGTH })}
         </Text>
       )}
       {creating && (
         <Checkbox
-          label="J’ai au moins 15 ans et j’ai lu la politique de confidentialité."
+          label={t('account.terms')}
           checked={acceptedTerms}
           onChange={setAcceptedTerms}
         />
@@ -140,7 +136,7 @@ export default function SignInScreen() {
       <FormError message={error} />
 
       <Button
-        label={busy ? 'Un instant…' : creating ? 'Créer mon compte' : 'Se connecter'}
+        label={busy ? t('common.wait') : creating ? t('account.createMine') : t('account.signIn')}
         icon={creating ? CreateAccountIcon : SignInIcon}
         disabled={busy || incomplete}
         onPress={submit}
@@ -148,7 +144,7 @@ export default function SignInScreen() {
 
       <Pressable accessibilityRole="link" hitSlop={8} style={styles.privacyLink} onPress={() => router.push('/privacy')}>
         <Text variant="caption" tone="muted">
-          Politique de confidentialité
+          {t('settings.privacyPolicy')}
         </Text>
       </Pressable>
     </KeyboardScrollView>

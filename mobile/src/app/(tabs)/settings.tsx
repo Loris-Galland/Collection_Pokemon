@@ -1,26 +1,43 @@
-import { LANGUAGES, LANGUAGE_LABELS } from '@collection/shared';
+import { CATALOG_LANGUAGES, LANGUAGE_NATIVE_NAMES } from '@collection/shared';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authClient } from '@/features/account/auth-client';
 import { ProfileButton } from '@/features/account/profile-button';
 import { useAccount } from '@/features/account/use-account';
-import { useSettings } from '@/features/settings/settings-provider';
-import { Button, Chip, Text, WEB_TAB_BAR_OFFSET, colors, radius, spacing } from '@/ui';
+import { useSettings, type AppLanguageChoice } from '@/features/settings/settings-provider';
+import { APP_LANGUAGES } from '@/i18n';
+import { Button, SelectField, Text, WEB_TAB_BAR_OFFSET, colors, radius, spacing } from '@/ui';
 
-/** Settings screen with the account, the catalog language and the legal notice. */
+/** Settings screen with the account, the languages and the legal notice. */
 export default function SettingsScreen() {
-  const { language, setLanguage } = useSettings();
+  const { t } = useTranslation();
+  const { catalogLanguage, setCatalogLanguage, appLanguage, setAppLanguage } = useSettings();
   const { user } = useAccount();
+
+  const appLanguageOptions = [
+    { value: 'system' as AppLanguageChoice, label: t('settings.system') },
+    ...APP_LANGUAGES.map((language) => ({
+      value: language as AppLanguageChoice,
+      label: t(`languages.${language}`),
+      detail: LANGUAGE_NATIVE_NAMES[language],
+    })),
+  ];
+  const catalogLanguageOptions = CATALOG_LANGUAGES.map((language) => ({
+    value: language,
+    label: t(`languages.${language}`),
+    detail: LANGUAGE_NATIVE_NAMES[language],
+  }));
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text variant="display">Réglages</Text>
+        <Text variant="display">{t('settings.title')}</Text>
 
         <View style={styles.section}>
-          <Text variant="heading">Compte</Text>
+          <Text variant="heading">{t('settings.account')}</Text>
           {user ? (
             <>
               <View style={styles.identity}>
@@ -32,48 +49,60 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <View style={styles.accountActions}>
-                <Button label="Mon compte et sécurité" variant="secondary" onPress={() => router.push('/account/security')} />
-                <Button label="Se déconnecter" variant="secondary" onPress={() => authClient.signOut()} />
+              <View style={styles.actions}>
+                <Button
+                  label={t('settings.accountAndSecurity')}
+                  variant="secondary"
+                  onPress={() => router.push('/account/security')}
+                />
+                <Button label={t('settings.signOut')} variant="secondary" onPress={() => authClient.signOut()} />
               </View>
             </>
           ) : (
             <>
               <Text variant="caption" tone="muted">
-                Connecte-toi pour commencer ta collection et tes envies.
+                {t('settings.signInHint')}
               </Text>
-              <Button label="Se connecter" onPress={() => router.push('/sign-in')} />
+              <Button label={t('settings.signIn')} onPress={() => router.push('/sign-in')} />
             </>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text variant="heading">Langue du catalogue</Text>
-          <Text variant="caption" tone="muted">
-            Noms et aperçus des cartes. La langue de tes exemplaires ne change pas.
+          <Text variant="heading">{t('settings.languages')}</Text>
+          <SelectField
+            label={t('settings.appLanguage')}
+            value={appLanguage}
+            options={appLanguageOptions}
+            onChange={setAppLanguage}
+            hint={t('settings.appLanguageHint')}
+          />
+          <SelectField
+            label={t('settings.catalogLanguage')}
+            value={catalogLanguage}
+            options={catalogLanguageOptions}
+            onChange={setCatalogLanguage}
+            hint={t('settings.catalogLanguageHint')}
+          />
+          <Text variant="caption" tone="faint">
+            {t('settings.catalogLanguageHint')}
           </Text>
-          <View style={styles.chips}>
-            {LANGUAGES.map((l) => (
-              <Chip key={l} label={LANGUAGE_LABELS[l]} selected={l === language} onPress={() => setLanguage(l)} />
-            ))}
+        </View>
+
+        <View style={styles.section}>
+          <Text variant="heading">{t('settings.privacy')}</Text>
+          <Text variant="caption" tone="muted">
+            {t('settings.privacyHint')}
+          </Text>
+          <View style={styles.actions}>
+            <Button label={t('settings.privacyPolicy')} variant="secondary" onPress={() => router.push('/privacy')} />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text variant="heading">Confidentialité</Text>
+          <Text variant="heading">{t('settings.about')}</Text>
           <Text variant="caption" tone="muted">
-            Ce que l’application enregistre, pourquoi, et tes droits.
-          </Text>
-          <View style={styles.accountActions}>
-            <Button label="Politique de confidentialité" variant="secondary" onPress={() => router.push('/privacy')} />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text variant="heading">À propos</Text>
-          <Text variant="caption" tone="muted">
-            Application non officielle. Les cartes Pokémon et leurs images appartiennent à The Pokémon Company. Données
-            du catalogue : TCGdex. Prix : moyennes Cardmarket, indicatives.
+            {t('settings.aboutText')}
           </Text>
         </View>
       </ScrollView>
@@ -106,12 +135,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
-  chips: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  accountActions: {
+  actions: {
     gap: spacing.sm,
     marginTop: spacing.xs,
   },

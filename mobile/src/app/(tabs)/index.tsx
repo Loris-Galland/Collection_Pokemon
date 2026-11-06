@@ -1,5 +1,6 @@
 import { computeAllSetProgress, normalizeSearchText, type CardSet } from '@collection/shared';
 import { useDeferredValue, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +32,7 @@ const GAP = spacing.md;
 
 /** Catalog screen. Lists every set as a card and searches both cards and sets. */
 export default function CatalogScreen() {
+  const { t } = useTranslation();
   const { data: sets, error, retry } = useSets();
   const copies = useCopies();
   const ownedQuantities = useOwnedQuantities();
@@ -39,7 +41,7 @@ export default function CatalogScreen() {
   // Typing stays quick, since the list of sets follows when the phone has time.
   const deferredSearch = useDeferredValue(search);
   const cardSearch = useCardSearch(search);
-  const { language, setDisplay, setSetDisplay } = useSettings();
+  const { catalogLanguage: language, setDisplay, setSetDisplay } = useSettings();
   const large = setDisplay === 'large';
   const largeColumns = useColumns(380, 3);
   const gridColumns = useColumns(120, 6);
@@ -61,9 +63,9 @@ export default function CatalogScreen() {
   if (error) {
     return (
       <StateView
-        title="Catalogue indisponible"
-        message="Vérifie ta connexion, puis réessaie."
-        actionLabel="Réessayer"
+        title={t('catalog.unavailable')}
+        message={t('common.checkConnection')}
+        actionLabel={t('common.retry')}
         onAction={retry}
       />
     );
@@ -91,9 +93,9 @@ export default function CatalogScreen() {
             <View style={styles.titleRow}>
               <View style={styles.titleBlock}>
                 <Text variant="overline" tone="accent">
-                  {sets.length} extensions
+                  {t('catalog.setCount', { count: sets.length })}
                 </Text>
-                <Text variant="display">Catalogue</Text>
+                <Text variant="display">{t('catalog.title')}</Text>
               </View>
               <ProfileButton />
             </View>
@@ -103,7 +105,7 @@ export default function CatalogScreen() {
                 onChangeText={setSearch}
                 // The list of cards loads as soon as a search looks likely, not after the first letters.
                 onFocus={() => prepareCardSearch(language)}
-                placeholder="Rechercher une carte ou une extension"
+                placeholder={t('catalog.searchPlaceholder')}
                 placeholderTextColor={colors.textFaint}
                 style={styles.search}
                 autoCorrect={false}
@@ -112,7 +114,7 @@ export default function CatalogScreen() {
               />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={large ? 'Afficher les extensions en grille' : 'Afficher les extensions en grand'}
+                accessibilityLabel={large ? t('catalog.showGrid') : t('catalog.showLarge')}
                 hitSlop={6}
                 onPress={() => setSetDisplay(large ? 'grid' : 'large')}
                 style={({ pressed }) => [styles.displayButton, pressed && styles.pressed]}>
@@ -130,13 +132,13 @@ export default function CatalogScreen() {
                 isWished={isWished}
               />
             )}
-            {searching && visibleSets.length > 0 && <Text variant="title">Extensions</Text>}
+            {searching && visibleSets.length > 0 && <Text variant="title">{t('catalog.sets')}</Text>}
           </Animated.View>
         }
         ListEmptyComponent={
           // When the card search already shows results, there is no need to say that no set matches.
           cardSearch.enabled && cardSearch.data?.total !== 0 ? undefined : (
-            <Text tone="muted">Aucune extension ne correspond.</Text>
+            <Text tone="muted">{t('catalog.noSet')}</Text>
           )
         }
         renderItem={({ item, index }) => (

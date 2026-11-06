@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from './text';
@@ -12,18 +13,19 @@ interface StepperProps {
 
 /** Quantity picker with minus and plus buttons. */
 export function Stepper({ value, onChange, min = 0, disabled = false }: StepperProps) {
+  const { t } = useTranslation();
   return (
     <View style={styles.row}>
       <StepButton
         label="−"
-        accessibilityLabel="Diminuer"
+        accessibilityLabel={t('common.decrease')}
         disabled={disabled || value <= min}
         onPress={() => onChange(value - 1)}
       />
       <Text variant="heading" style={styles.value}>
         {value}
       </Text>
-      <StepButton label="+" accessibilityLabel="Augmenter" disabled={disabled} onPress={() => onChange(value + 1)} />
+      <StepButton label="+" accessibilityLabel={t('common.increase')} disabled={disabled} onPress={() => onChange(value + 1)} />
     </View>
   );
 }

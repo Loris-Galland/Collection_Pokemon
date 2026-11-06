@@ -3,9 +3,6 @@ import {
   CONDITION_ABBREVIATIONS,
   CONDITION_LABELS,
   DEFAULT_CONDITION,
-  LANGUAGES,
-  LANGUAGE_LABELS,
-  VARIANT_LABELS,
   pickVariant,
   type Card,
   type Condition,
@@ -14,6 +11,7 @@ import {
   type Variant,
 } from '@collection/shared';
 import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,9 +19,9 @@ import { useRequireAccount } from '@/features/account/use-account';
 import { CardImage } from '@/features/catalog/card-image';
 import { loadCards } from '@/features/catalog/hooks';
 import { useSettings } from '@/features/settings/settings-provider';
-import { Button, Chip, SegmentedControl, Text, colors, radius, spacing } from '@/ui';
+import { Button, Chip, SegmentedControl, SelectField, Text, colors, radius, spacing } from '@/ui';
 
-import { Field } from './add-copy-form';
+import { Field, useLanguageOptions } from './add-copy-form';
 import { useCollectionActions } from './collection-provider';
 
 // Most cards exist in these, and a card that does not falls back on what it has.
@@ -45,10 +43,10 @@ interface BulkAddPanelProps {
   onDone: (addedCount: number, failedIds: readonly string[]) => void;
 }
 
-const cardsLabel = (count: number) => `${count} carte${count > 1 ? 's' : ''}`;
-
 /** Bar under a selection of cards, which adds them all at once with one language and a condition for each card. */
 export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: BulkAddPanelProps) {
+  const { t } = useTranslation();
+  const languageOptions = useLanguageOptions();
   const { addMany } = useCollectionActions();
   const requireAccount = useRequireAccount();
   const settings = useSettings();
@@ -58,7 +56,7 @@ export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: Bu
   const [progress, setProgress] = useState<number>();
   const busy = progress !== undefined;
   const [preferredVariant, setPreferredVariant] = useState<Variant>('normal');
-  const [language, setLanguage] = useState<Language>(settings.language);
+  const [language, setLanguage] = useState<Language>(settings.catalogLanguage);
   // The condition of most cards, and the ones chosen for a single card.
   const [commonCondition, setCommonCondition] = useState<Condition>(DEFAULT_CONDITION);
   const [cardConditions, setCardConditions] = useState<ReadonlyMap<string, Condition>>(new Map());
@@ -79,7 +77,7 @@ export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: Bu
     requireAccount(async () => {
       setProgress(0);
       // The variants of a card are only known once the card itself is loaded.
-      const details = await loadCards(settings.language, selected.map((card) => card.id), setProgress);
+      const details = await loadCards(settings.catalogLanguage, selected.map((card) => card.id), setProgress);
       const failedIds: string[] = [];
       const inputs: CopyInput[] = [];
       for (const card of selected) {
@@ -110,20 +108,21 @@ export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: Bu
           initialNumToRender={6}
           ListHeaderComponent={
             <View style={styles.options}>
-              <Field label="Variante">
+              <Field label={t('addCopy.variant')}>
                 {PREFERRED_VARIANTS.map((v) => (
-                  <Chip key={v} label={VARIANT_LABELS[v]} selected={v === preferredVariant} onPress={() => setPreferredVariant(v)} />
+                  <Chip key={v} label={t(`variants.${v}`)} selected={v === preferredVariant} onPress={() => setPreferredVariant(v)} />
                 ))}
               </Field>
               <Text variant="caption" tone="faint">
-                Une carte qui n’existe pas dans cette variante est ajoutée dans celle qu’elle a.
+                {t('bulkAdd.variantFallback')}
               </Text>
-              <Field label="Langue">
-                {LANGUAGES.map((l) => (
-                  <Chip key={l} label={LANGUAGE_LABELS[l]} selected={l === language} onPress={() => setLanguage(l)} />
-                ))}
-              </Field>
-              <Field label="État de toutes les cartes">
+              <SelectField
+                label={t('addCopy.language')}
+                value={language}
+                options={languageOptions}
+                onChange={setLanguage}
+              />
+              <Field label={t('bulkAdd.everyCondition')}>
                 {CONDITIONS.map((c) => (
                   <Chip
                     key={c}
@@ -134,7 +133,7 @@ export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: Bu
                 ))}
               </Field>
               <Text variant="overline" tone="muted">
-                État carte par carte
+                {t('bulkAdd.conditionPerCard')}
               </Text>
             </View>
           }
@@ -144,10 +143,10 @@ export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: Bu
       {open ? (
         <View style={styles.actions}>
           <View style={styles.secondaryAction}>
-            <Button label="Retour" variant="secondary" disabled={busy} onPress={() => setOpen(false)} />
+            <Button label={t('common.back')} variant="secondary" disabled={busy} onPress={() => setOpen(false)} />
           </View>
           <View style={styles.primaryAction}>
-            <Button label={busy ? `Un instant… ${progress}/${count}` : `Ajouter ${cardsLabel(count)}`} disabled={busy} onPress={addAll} />
+            <Button label={busy ? t('common.waitProgress', { done: progress, total: count }) : t('bulkAdd.addCards', { count })} disabled={busy} onPress={addAll} />
           </View>
         </View>
       ) : (
@@ -155,17 +154,17 @@ export function BulkAddPanel({ selected, onCancel, onSelectMissing, onDone }: Bu
           <View style={styles.links}>
             <Pressable accessibilityRole="button" hitSlop={10} onPress={onCancel}>
               <Text variant="caption" tone="muted">
-                Annuler
+                {t('common.cancel')}
               </Text>
             </Pressable>
             <Pressable accessibilityRole="button" hitSlop={10} onPress={onSelectMissing}>
               <Text variant="caption" tone="accent">
-                Toutes les manquantes
+                {t('bulkAdd.allMissing')}
               </Text>
             </Pressable>
           </View>
           <Button
-            label={count > 0 ? `Continuer (${count})` : 'Touche les cartes à ajouter'}
+            label={count > 0 ? t('bulkAdd.continueCount', { count }) : t('bulkAdd.touchCards')}
             disabled={count === 0}
             onPress={() => setOpen(true)}
           />

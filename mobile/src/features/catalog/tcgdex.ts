@@ -10,7 +10,7 @@ import {
   type Card,
   type CardSet,
   type CardmarketPricing,
-  type Language,
+  type CatalogLanguage,
   type Price,
   type PriceTrend,
   type SearchEntry,
@@ -85,21 +85,24 @@ export interface CardDetail {
 export type ImageQuality = 'low' | 'high';
 
 /** Calls the TCGdex API in the requested language and returns the JSON. */
-async function get<T>(language: Language, path: string): Promise<T> {
+async function get<T>(language: CatalogLanguage, path: string): Promise<T> {
   const response = await fetch(`${API_URL}/${language}${path}`);
   if (!response.ok) throw new Error(`TCGdex returned ${response.status} for ${path}`);
   return (await response.json()) as T;
 }
 
-/** TCGdex lacks many pictures in one language that it has in the other, and a card looks the same in both. */
-function otherLanguage(language: Language): Language {
-  return language === 'fr' ? 'en' : 'fr';
+/**
+ * TCGdex lacks many pictures in one language that it has in another, and a card looks the same in all of them. English
+ * is the most complete, and French fills in English.
+ */
+function otherLanguage(language: CatalogLanguage): CatalogLanguage {
+  return language === 'en' ? 'fr' : 'en';
 }
 
 const fallbackSets = new Map<string, Promise<ApiSet | undefined>>();
 
 /** A set in the other language, to fill in its missing pictures. Without it the screen just shows fewer of them. */
-function fallbackSet(language: Language, setId: string): Promise<ApiSet | undefined> {
+function fallbackSet(language: CatalogLanguage, setId: string): Promise<ApiSet | undefined> {
   const key = `${language}/${setId}`;
   let set = fallbackSets.get(key);
   if (!set) {
@@ -151,7 +154,7 @@ function toVariants(api: ApiCard['variants']): Variant[] {
 }
 
 /** Sets, from newest to oldest. */
-export async function fetchSets(language: Language): Promise<CardSet[]> {
+export async function fetchSets(language: CatalogLanguage): Promise<CardSet[]> {
   const [sets, fallbacks] = await Promise.all([
     get<ApiSetSummary[]>(language, '/sets'),
     get<ApiSetSummary[]>(otherLanguage(language), '/sets').catch(() => []),
@@ -167,7 +170,7 @@ export async function fetchSets(language: Language): Promise<CardSet[]> {
 }
 
 /** Loads a set and the list of its cards. */
-export async function fetchSet(language: Language, setId: string): Promise<SetWithCards> {
+export async function fetchSet(language: CatalogLanguage, setId: string): Promise<SetWithCards> {
   const api = await get<ApiSet>(language, `/sets/${encodeURIComponent(setId)}`);
   const complete = api.logo && api.symbol && api.cards.every((card) => card.image);
   const fallback = complete ? undefined : await fallbackSet(language, setId);
@@ -187,7 +190,7 @@ export async function fetchSet(language: Language, setId: string): Promise<SetWi
 }
 
 /** Loads the details of a card, meaning its variants, set and prices. */
-export async function fetchCard(language: Language, cardId: string): Promise<CardDetail> {
+export async function fetchCard(language: CatalogLanguage, cardId: string): Promise<CardDetail> {
   const api = await get<ApiCard>(language, `/cards/${encodeURIComponent(cardId)}`);
   const fallback = api.image
     ? undefined
@@ -221,7 +224,7 @@ export interface CardSearchResult {
 
 const INDEX_SLICE_SIZE = 1500;
 
-const searchIndexes = new Map<Language, Promise<SearchEntry<ApiCardSummary>[]>>();
+const searchIndexes = new Map<CatalogLanguage, Promise<SearchEntry<ApiCardSummary>[]>>();
 
 interface CardToIndex {
   card: ApiCardSummary;
@@ -244,7 +247,7 @@ async function buildIndexInSlices(cards: readonly CardToIndex[]): Promise<Search
 }
 
 /** Every card of a language, newest sets first. It is a few megabytes, so it loads once, on the first search. */
-function loadSearchIndex(language: Language): Promise<SearchEntry<ApiCardSummary>[]> {
+function loadSearchIndex(language: CatalogLanguage): Promise<SearchEntry<ApiCardSummary>[]> {
   let index = searchIndexes.get(language);
   if (!index) {
     index = Promise.all([
@@ -268,12 +271,12 @@ function loadSearchIndex(language: Language): Promise<SearchEntry<ApiCardSummary
 }
 
 /** Starts loading the list of cards ahead of a search. A failure only means the search itself tries again. */
-export function prepareCardSearch(language: Language): void {
+export function prepareCardSearch(language: CatalogLanguage): void {
   loadSearchIndex(language).catch(() => undefined);
 }
 
 /** Cards in the catalog language matching the query, also by their name in the other language when nothing else does. */
-async function matchingCards(language: Language, query: string): Promise<ApiCardSummary[]> {
+async function matchingCards(language: CatalogLanguage, query: string): Promise<ApiCardSummary[]> {
   const index = await loadSearchIndex(language);
   const matches = searchIndex(index, query);
   if (matches.length > 0) return matches;
@@ -283,7 +286,7 @@ async function matchingCards(language: Language, query: string): Promise<ApiCard
 }
 
 /** Searches cards by name, set or number across every set. */
-export async function searchCards(language: Language, query: string): Promise<CardSearchResult> {
+export async function searchCards(language: CatalogLanguage, query: string): Promise<CardSearchResult> {
   const matches = await matchingCards(language, query);
   const shown = matches.slice(0, SEARCH_LIMIT);
   const setsToFill = new Set(shown.filter((card) => !card.image).map((card) => setIdOf(card.id)));

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { Button, Text, TextField, colors, radius, spacing } from '@/ui';
@@ -12,9 +13,10 @@ import { leaveAccountScreen } from './use-account';
 import { useAccountRequest } from './use-account-request';
 
 function PasswordField({ value, onChangeText }: { value: string; onChangeText: (value: string) => void }) {
+  const { t } = useTranslation();
   return (
     <TextField
-      label="Mot de passe actuel"
+      label={t('account.currentPassword')}
       value={value}
       onChangeText={onChangeText}
       secureTextEntry
@@ -25,9 +27,10 @@ function PasswordField({ value, onChangeText }: { value: string; onChangeText: (
 }
 
 function CodeField({ value, onChangeText }: { value: string; onChangeText: (value: string) => void }) {
+  const { t } = useTranslation();
   return (
     <TextField
-      label="Code à 6 chiffres"
+      label={t('account.sixDigitCode')}
       value={value}
       onChangeText={onChangeText}
       keyboardType="number-pad"
@@ -39,6 +42,7 @@ function CodeField({ value, onChangeText }: { value: string; onChangeText: (valu
 
 /** Turns two-factor authentication on or off. A Google account manages it on Google instead. */
 export function TwoFactorSection({ hasPassword, enabled }: { hasPassword: boolean; enabled: boolean }) {
+  const { t } = useTranslation();
   const [settingUp, setSettingUp] = useState(false);
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -57,7 +61,7 @@ export function TwoFactorSection({ hasPassword, enabled }: { hasPassword: boolea
   if (!hasPassword) {
     content = (
       <Text variant="caption" tone="muted">
-        Tu te connectes avec Google. Active la validation en deux étapes directement sur ton compte Google.
+        {t('account.twoFactorGoogle')}
       </Text>
     );
   } else if (settingUp) {
@@ -66,28 +70,28 @@ export function TwoFactorSection({ hasPassword, enabled }: { hasPassword: boolea
     content = (
       <>
         <Text variant="caption" style={{ color: colors.success }}>
-          ✓ Activée
+          {t('account.enabled')}
         </Text>
         <PasswordField value={password} onChangeText={setPassword} />
         <CodeField value={code} onChangeText={setCode} />
         <FormError message={error} />
-        <Button label="Désactiver" variant="secondary" disabled={busy || !password || !code.trim()} onPress={disable} />
+        <Button label={t('account.disable')} variant="secondary" disabled={busy || !password || !code.trim()} onPress={disable} />
       </>
     );
   } else {
     content = (
       <>
         <Text variant="caption" tone="muted">
-          Protège ton compte avec un code temporaire en plus de ton mot de passe.
+          {t('account.twoFactorPitch')}
         </Text>
-        <Button label="Activer" variant="secondary" onPress={() => setSettingUp(true)} />
+        <Button label={t('account.enable')} variant="secondary" onPress={() => setSettingUp(true)} />
       </>
     );
   }
 
   return (
     <View style={styles.section}>
-      <Text variant="heading">Validation en deux étapes</Text>
+      <Text variant="heading">{t('account.twoFactor')}</Text>
       {content}
     </View>
   );
@@ -101,6 +105,7 @@ interface DeleteAccountSectionProps {
 
 /** Deletes the account for good, along with what it saved on this phone. */
 export function DeleteAccountSection({ userId, hasPassword, twoFactorEnabled }: DeleteAccountSectionProps) {
+  const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -120,10 +125,9 @@ export function DeleteAccountSection({ userId, hasPassword, twoFactorEnabled }: 
 
   return (
     <View style={styles.section}>
-      <Text variant="heading">Supprimer mon compte</Text>
+      <Text variant="heading">{t('account.deleteTitle')}</Text>
       <Text variant="caption" tone="muted">
-        Ton compte et ce qu’il a enregistré sur ce téléphone seront supprimés définitivement. Cette action est
-        irréversible.
+        {t('account.deleteText')}
       </Text>
       {confirming ? (
         <>
@@ -131,14 +135,14 @@ export function DeleteAccountSection({ userId, hasPassword, twoFactorEnabled }: 
           {twoFactorEnabled && <CodeField value={code} onChangeText={setCode} />}
           <FormError message={error} />
           <Button
-            label={busy ? 'Un instant…' : 'Supprimer définitivement'}
+            label={busy ? t('common.wait') : t('account.deleteForGood')}
             disabled={busy || incomplete}
             onPress={deleteAccount}
           />
-          <Button label="Annuler" variant="secondary" onPress={() => setConfirming(false)} />
+          <Button label={t('common.cancel')} variant="secondary" onPress={() => setConfirming(false)} />
         </>
       ) : (
-        <Button label="Supprimer mon compte" variant="secondary" onPress={() => setConfirming(true)} />
+        <Button label={t('account.deleteTitle')} variant="secondary" onPress={() => setConfirming(true)} />
       )}
     </View>
   );
