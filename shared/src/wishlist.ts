@@ -79,7 +79,7 @@ export function removeWish(state: Wishes, cardId: string): Wishes {
 }
 
 /** The wishes of one wishlist, newest first. */
-export function wishesOf(state: Wishes, wishlistId: string): Wish[] {
+export function wishesOf(state: { readonly wishes: readonly Wish[] }, wishlistId: string): Wish[] {
   return state.wishes.filter((wish) => wish.wishlistId === wishlistId);
 }
 

@@ -1,4 +1,4 @@
-import { computeWishlistCost } from '@collection/shared';
+import { wishesOf } from '@collection/shared';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,10 +7,10 @@ import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRequireAccount } from '@/features/account/use-account';
-import { useCards } from '@/features/catalog/hooks';
 import { WishlistNameSheet } from '@/features/wishlist/wishlist-name-sheet';
 import { useWishlist, useWishlistActions } from '@/features/wishlist/wishlist-provider';
 import { NewWishlistTile, WishlistTile } from '@/features/wishlist/wishlist-tile';
+import { useWishCards } from '@/features/wishlist/use-wish-cards';
 import { formatEuros } from '@/lib/format';
 import {
   Button,
@@ -33,29 +33,24 @@ export default function WishlistScreen() {
   const { wishlists, wishes } = useWishlist();
   const { createWishlist } = useWishlistActions();
   const requireAccount = useRequireAccount();
-  const cardIds = useMemo(() => wishes.map((wish) => wish.cardId), [wishes]);
-  const { cards, loading } = useCards(cardIds);
+  const { cards, loading, costOf } = useWishCards(wishes);
   const columns = useColumns(170, 5);
   const [creating, setCreating] = useState(false);
 
-  const pricesByCard = useMemo(
-    () => new Map([...cards].map(([cardId, detail]) => [cardId, detail.prices])),
-    [cards],
-  );
-  const cost = useMemo(() => computeWishlistCost(wishes, pricesByCard), [wishes, pricesByCard]);
+  const cost = useMemo(() => costOf(wishes), [costOf, wishes]);
 
   const lists = useMemo(
     () =>
       wishlists.map((wishlist) => {
-        const listWishes = wishes.filter((wish) => wish.wishlistId === wishlist.id);
+        const listWishes = wishesOf({ wishes }, wishlist.id);
         return {
           wishlist,
           count: listWishes.length,
           imageUrls: listWishes.slice(0, 4).map((wish) => cards.get(wish.cardId)?.card.imageUrl),
-          cost: loading ? undefined : computeWishlistCost(listWishes, pricesByCard).amount,
+          cost: loading ? undefined : costOf(listWishes).amount,
         };
       }),
-    [wishlists, wishes, cards, loading, pricesByCard],
+    [wishlists, wishes, cards, loading, costOf],
   );
 
   const empty = wishlists.length === 0;

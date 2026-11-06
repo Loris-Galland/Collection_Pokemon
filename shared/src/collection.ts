@@ -121,6 +121,11 @@ export function summarizeCollection(copies: readonly Copy[]): { copyCount: numbe
   return { copyCount, distinctCardCount: new Set(copies.map((copy) => copy.cardId)).size };
 }
 
+/** Every copy of one card, whatever its variant, language or condition. */
+export function copiesOfCard(copies: readonly Copy[], cardId: string): Copy[] {
+  return copies.filter((copy) => copy.cardId === cardId);
+}
+
 export function isCondition(value: unknown): value is Condition {
   return CONDITIONS.includes(value as Condition);
 }

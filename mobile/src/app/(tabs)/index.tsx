@@ -1,4 +1,4 @@
-import { computeAllSetProgress, normalizeSearchText, type CardSet } from '@collection/shared';
+import { computeAllSetProgress, searchSetsByName, type CardSet } from '@collection/shared';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
@@ -52,11 +52,7 @@ export default function CatalogScreen() {
 
   const setsById = useMemo(() => new Map<string, CardSet>((sets ?? []).map((set) => [set.id, set])), [sets]);
 
-  const visibleSets = useMemo(() => {
-    const query = normalizeSearchText(deferredSearch);
-    if (!query) return sets ?? [];
-    return (sets ?? []).filter((set) => normalizeSearchText(set.name).includes(query));
-  }, [sets, deferredSearch]);
+  const visibleSets = useMemo(() => searchSetsByName(sets ?? [], deferredSearch), [sets, deferredSearch]);
 
   const cells = useFilledRows(visibleSets, columns);
 

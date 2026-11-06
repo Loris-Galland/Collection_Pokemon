@@ -1,5 +1,7 @@
 // Searching the catalog. It runs on the phone, because TCGdex only matches a name with its exact accents.
 
+import type { CardSet } from './catalog.ts';
+
 /** Lower case with no accents or punctuation, so "Salamèche" and "salameche" read the same. */
 export function normalizeSearchText(text: string): string {
   return text
@@ -99,4 +101,11 @@ export function searchIndex<T>(index: readonly SearchEntry<T>[], query: string):
   }
   // The sort is stable, so the order of the index decides between equal ranks.
   return matches.sort((a, b) => a.rank - b.rank).map((match) => match.item);
+}
+
+/** The sets whose name contains the search, accents and case aside. An empty search keeps every set. */
+export function searchSetsByName(sets: readonly CardSet[], query: string): readonly CardSet[] {
+  const normalized = normalizeSearchText(query);
+  if (!normalized) return sets;
+  return sets.filter((cardSet) => normalizeSearchText(cardSet.name).includes(normalized));
 }

@@ -1,4 +1,4 @@
-import { sharesShinyPrice } from '@collection/shared';
+import { copiesOfCard, sharesShinyPrice } from '@collection/shared';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -39,7 +39,7 @@ export default function CardScreen() {
   if (!data) return <StateView loading />;
 
   const { card, set, prices, trends } = data;
-  const ownedCopies = copies.filter((copy) => copy.cardId === card.id);
+  const ownedCopies = copiesOfCard(copies, card.id);
 
   return (
     <>

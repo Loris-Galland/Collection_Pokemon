@@ -20,6 +20,12 @@ export function computeCollectionValue(copies: readonly Copy[], prices: Readonly
   return { amount: Math.round(amount * 100) / 100, currency: 'EUR', unpricedCopyCount };
 }
 
+/** A sorted copy of the list, the most valuable copies first and those with no known price last. */
+export function sortCopiesByValue(copies: readonly Copy[], prices: ReadonlyMap<string, Price>): Copy[] {
+  const amountOf = (copy: Copy) => prices.get(priceKey(copy.cardId, copy.variant))?.amount ?? -1;
+  return [...copies].sort((a, b) => amountOf(b) - amountOf(a));
+}
+
 /**
  * Value trend, meaning what the copies owned today would be worth at the recent Cardmarket averages. It is an estimate
  * that only moves with prices, not a value history.

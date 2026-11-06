@@ -1,4 +1,4 @@
-import { computeAllSetProgress, priceKey, summarizeCollection, type Copy } from '@collection/shared';
+import { listStartedSets, priceKey, sortCopiesByValue, summarizeCollection, type Copy } from '@collection/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -22,26 +22,11 @@ export default function CollectionScreen() {
 
   const { copyCount, distinctCardCount } = useMemo(() => summarizeCollection(copies), [copies]);
 
-  const startedSets = useMemo(() => {
-    const progressBySet = computeAllSetProgress(sets ?? [], copies);
-    return (sets ?? [])
-      .map((set) => ({ set, progress: progressBySet.get(set.id)! }))
-      .filter(({ progress }) => progress.owned > 0)
-      .sort((a, b) => b.progress.ratio - a.progress.ratio);
-  }, [sets, copies]);
+  const startedSets = useMemo(() => listStartedSets(sets ?? [], copies), [sets, copies]);
 
   const priceOf = (copy: Copy) => prices.get(priceKey(copy.cardId, copy.variant))?.amount;
 
-  // The most valuable copies come first, and those with no known price last.
-  const sortedCopies = useMemo(
-    () =>
-      [...copies].sort(
-        (a, b) =>
-          (prices.get(priceKey(b.cardId, b.variant))?.amount ?? -1) -
-          (prices.get(priceKey(a.cardId, a.variant))?.amount ?? -1),
-      ),
-    [copies, prices],
-  );
+  const sortedCopies = useMemo(() => sortCopiesByValue(copies, prices), [copies, prices]);
   const cells = useFilledRows(sortedCopies, columns);
 
   return (

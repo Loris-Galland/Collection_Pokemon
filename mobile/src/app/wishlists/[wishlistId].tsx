@@ -1,11 +1,11 @@
-import { computeWishlistCost } from '@collection/shared';
+import { wishesOf } from '@collection/shared';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 
-import { useCards } from '@/features/catalog/hooks';
+import { useWishCards } from '@/features/wishlist/use-wish-cards';
 import { WishTile } from '@/features/wishlist/wish-tile';
 import { WishlistNameForm } from '@/features/wishlist/wishlist-name-sheet';
 import { useWishlist, useWishlistActions } from '@/features/wishlist/wishlist-provider';
@@ -35,19 +35,15 @@ export default function WishlistScreen() {
   const { wishlists, wishes } = useWishlist();
   const { renameWishlist, deleteWishlist } = useWishlistActions();
   const wishlist = wishlists.find((entry) => entry.id === wishlistId);
-  const listWishes = useMemo(() => wishes.filter((wish) => wish.wishlistId === wishlistId), [wishes, wishlistId]);
-  const cardIds = useMemo(() => listWishes.map((wish) => wish.cardId), [listWishes]);
-  const { cards, loading } = useCards(cardIds);
+  const listWishes = useMemo(() => wishesOf({ wishes }, wishlistId), [wishes, wishlistId]);
+  const { cards, loading, costOf } = useWishCards(listWishes);
   const columns = useColumns(165, 6);
   const [panel, setPanel] = useState<Panel>();
   // What the sheet shows, kept while it slides away so its content does not change on the way out.
   const [view, setView] = useState<Panel>('options');
   if (panel && panel !== view) setView(panel);
 
-  const cost = useMemo(() => {
-    const pricesByCard = new Map([...cards].map(([cardId, detail]) => [cardId, detail.prices]));
-    return computeWishlistCost(listWishes, pricesByCard);
-  }, [listWishes, cards]);
+  const cost = useMemo(() => costOf(listWishes), [costOf, listWishes]);
 
   if (!wishlist) {
     return <StateView title={t('wishlist.listNotFound')} actionLabel={t('common.back')} onAction={() => router.back()} />;

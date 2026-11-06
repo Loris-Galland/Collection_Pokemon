@@ -105,6 +105,11 @@ export interface CardSet {
   };
 }
 
+/** Secret cards, meaning those numbered beyond the printed total, like 180/165. */
+export function countSecretCards(set: CardSet): number {
+  return Math.max(0, set.cardCount.total - set.cardCount.official);
+}
+
 /** Card. An entry of the catalog, never an owned object. */
 export interface Card {
   id: string;

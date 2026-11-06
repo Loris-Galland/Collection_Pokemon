@@ -32,6 +32,18 @@ export function computeAllSetProgress(sets: readonly CardSet[], copies: readonly
   return new Map(sets.map((set) => [set.id, progressOf(set, ownedBySet.get(set.id)?.size ?? 0)]));
 }
 
+/** The sets with at least one owned card, the most complete first. */
+export function listStartedSets(
+  sets: readonly CardSet[],
+  copies: readonly Copy[],
+): { set: CardSet; progress: SetProgress }[] {
+  const progressBySet = computeAllSetProgress(sets, copies);
+  return sets
+    .map((set) => ({ set, progress: progressBySet.get(set.id)! }))
+    .filter(({ progress }) => progress.owned > 0)
+    .sort((a, b) => b.progress.ratio - a.progress.ratio);
+}
+
 function progressOf(set: CardSet, distinctOwned: number): SetProgress {
   const total = set.cardCount.total;
   const owned = Math.min(distinctOwned, total);

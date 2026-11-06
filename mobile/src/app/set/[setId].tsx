@@ -1,4 +1,4 @@
-import { computeSetProgress } from '@collection/shared';
+import { computeSetProgress, countSecretCards } from '@collection/shared';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -102,7 +102,7 @@ export default function SetScreen() {
                 {progress.owned}/{progress.total}
               </Text>
               <Text variant="caption" tone="muted">
-                {formatPercent(progress.ratio)} · {t('set.secrets', { count: set.cardCount.total - set.cardCount.official })}
+                {formatPercent(progress.ratio)} · {t('set.secrets', { count: countSecretCards(set) })}
               </Text>
             </View>
             <ProgressBar ratio={progress.ratio} />
