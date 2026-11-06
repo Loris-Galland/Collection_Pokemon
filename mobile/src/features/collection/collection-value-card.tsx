@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { formatEuros, formatSignedEuros } from '@/lib/format';
-import { AreaChart, Text, colors, radius, spacing, type ChartPoint } from '@/ui';
+import { AMOUNT_LINE_HEIGHT, AreaChart, PokeballLoader, Text, colors, radius, spacing, type ChartPoint } from '@/ui';
 
 interface CollectionValueCardProps {
   value: CollectionValue;
@@ -42,9 +42,13 @@ export function CollectionValueCard({ value, valueTrend, loading }: CollectionVa
         <Text variant="overline" tone="muted">
           {t('collection.value')}
         </Text>
-        <Text variant="display" tone="accent">
-          {loading ? '…' : formatEuros(value.amount)}
-        </Text>
+        {loading ? (
+          <PokeballLoader size={AMOUNT_LINE_HEIGHT} />
+        ) : (
+          <Text variant="display" tone="accent">
+            {formatEuros(value.amount)}
+          </Text>
+        )}
         {showTrend && (
           <View style={[styles.change, { backgroundColor: changeBackground }]}>
             <Text variant="caption" style={{ color: changeColor }}>

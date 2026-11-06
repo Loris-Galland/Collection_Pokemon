@@ -1,6 +1,7 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Button } from './button';
+import { PokeballLoader } from './pokeball-loader';
 import { Text } from './text';
 import { colors, spacing } from './theme';
 
@@ -20,7 +21,7 @@ export function StateView({
 }) {
   return (
     <View style={styles.container}>
-      {loading && <ActivityIndicator color={colors.accent} size="large" />}
+      {loading && <PokeballLoader size={52} />}
       {title && (
         <Text variant="heading" style={styles.center}>
           {title}

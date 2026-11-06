@@ -62,7 +62,8 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
     };
   }, [ownerId]);
 
-  if (!owned) return null;
+  // Only on the very first load. Later the current collection stays on screen until the next one is ready.
+  if (!owned) return <StateView loading />;
   return (
     <StoreContext.Provider value={owned}>
       <AvailableCollection store={owned.store}>{children}</AvailableCollection>

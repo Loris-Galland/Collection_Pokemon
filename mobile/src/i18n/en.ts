@@ -5,6 +5,7 @@ import type { Translation } from './fr';
 export const en: Translation = {
   common: {
     retry: 'Try again',
+    loading: 'Loading',
     checkConnection: 'Check your connection, then try again.',
     wait: 'One moment…',
     waitProgress: 'One moment… {{done}}/{{total}}',

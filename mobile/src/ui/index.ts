@@ -9,6 +9,7 @@ export * from './heart-button';
 export * from './icons';
 export * from './keyboard-scroll-view';
 export * from './pressable-scale';
+export * from './pokeball-loader';
 export * from './progress-bar';
 export * from './segmented-control';
 export * from './select-field';

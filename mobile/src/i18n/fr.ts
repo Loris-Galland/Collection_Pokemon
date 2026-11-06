@@ -3,6 +3,7 @@
 export const fr = {
   common: {
     retry: 'Réessayer',
+    loading: 'Chargement',
     checkConnection: 'Vérifie ta connexion, puis réessaie.',
     wait: 'Un instant…',
     waitProgress: 'Un instant… {{done}}/{{total}}',

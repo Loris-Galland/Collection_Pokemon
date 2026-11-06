@@ -11,9 +11,11 @@ import { WishlistNameForm } from '@/features/wishlist/wishlist-name-sheet';
 import { useWishlist, useWishlistActions } from '@/features/wishlist/wishlist-provider';
 import { formatEuros } from '@/lib/format';
 import {
+  AMOUNT_LINE_HEIGHT,
   Button,
   MAX_CONTENT_WIDTH,
   MoreIcon,
+  PokeballLoader,
   Sheet,
   StateView,
   Text,
@@ -77,7 +79,11 @@ export default function WishlistScreen() {
               <Text variant="overline" tone="muted">
                 {t('common.cards', { count: listWishes.length })}
               </Text>
-              <Text variant="display">{loading ? '…' : formatEuros(cost.amount)}</Text>
+              {loading ? (
+                <PokeballLoader size={AMOUNT_LINE_HEIGHT} />
+              ) : (
+                <Text variant="display">{formatEuros(cost.amount)}</Text>
+              )}
               <Text variant="caption" tone="muted">
                 {t('wishlist.costNotice')}
                 {!loading && cost.unpricedCount > 0 && t('wishlist.unpriced', { count: cost.unpricedCount })}

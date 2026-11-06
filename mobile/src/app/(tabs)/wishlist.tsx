@@ -13,8 +13,10 @@ import { NewWishlistTile, WishlistTile } from '@/features/wishlist/wishlist-tile
 import { useWishCards } from '@/features/wishlist/use-wish-cards';
 import { formatEuros } from '@/lib/format';
 import {
+  AMOUNT_LINE_HEIGHT,
   Button,
   HeartIcon,
+  PokeballLoader,
   MAX_CONTENT_WIDTH,
   Text,
   colors,
@@ -95,7 +97,11 @@ export default function WishlistScreen() {
                 <Text variant="overline" tone="muted">
                   {t('wishlist.total')}
                 </Text>
-                <Text variant="display">{loading ? '…' : formatEuros(cost.amount)}</Text>
+                {loading ? (
+                  <PokeballLoader size={AMOUNT_LINE_HEIGHT} />
+                ) : (
+                  <Text variant="display">{formatEuros(cost.amount)}</Text>
+                )}
                 <Text variant="caption" tone="muted">
                   {t('wishlist.costNotice')}
                   {!loading && cost.unpricedCount > 0 && t('wishlist.unpriced', { count: cost.unpricedCount })}

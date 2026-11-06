@@ -2,11 +2,11 @@ import type { Card, CardSet } from '@collection/shared';
 import { router } from 'expo-router';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { useWishPicker, type WishCard } from '@/features/wishlist/wish-picker';
-import { Button, HeartButton, PressableScale, Text, colors, radius, spacing } from '@/ui';
+import { Button, HeartButton, PokeballLoader, PressableScale, Text, colors, radius, spacing } from '@/ui';
 
 import { CardImage } from './card-image';
 import { SEARCH_LIMIT } from './tcgdex';
@@ -54,7 +54,7 @@ export function CardSearchResults({
       <View style={styles.sectionHeader}>
         <Text variant="title">{t('search.cards')}</Text>
         {loading ? (
-          <ActivityIndicator color={colors.accent} />
+          <PokeballLoader size={24} />
         ) : (
           cards && (
             <Text variant="caption" tone="muted">
