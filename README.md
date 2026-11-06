@@ -57,6 +57,8 @@ Set these environment variables in the Vercel project settings, or in `server/.e
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign in, optional |
 | `AUTH_EXTRA_ORIGINS` | Extra trusted origins for development, such as Expo Go, comma separated. Remove it before a public release |
 
+Vercel does not rewrite import paths, so the server cannot run the TypeScript sources of `shared/`. Its build script compiles `shared/` to JavaScript, and the server imports it from `@collection/shared/compiled`. The app and the tests keep using the sources.
+
 The app needs `EXPO_PUBLIC_API_URL`, the address of the server, in `mobile/.env.local`.
 
 ## Status

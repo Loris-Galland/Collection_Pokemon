@@ -54,6 +54,13 @@ export interface Copy {
 
 export type CopyInput = Omit<Copy, 'id'>;
 
+/** What makes two copies the same. Each combination exists only once in a collection. */
+export type CopyCombination = Pick<Copy, 'cardId' | 'variant' | 'language' | 'condition'>;
+
+export function combinationOf(input: CopyInput): CopyCombination {
+  return { cardId: input.cardId, variant: input.variant, language: input.language, condition: input.condition };
+}
+
 function isSameCombination(a: CopyInput, b: CopyInput): boolean {
   return a.cardId === b.cardId && a.variant === b.variant && a.language === b.language && a.condition === b.condition;
 }
@@ -130,21 +137,68 @@ export function isCondition(value: unknown): value is Condition {
   return CONDITIONS.includes(value as Condition);
 }
 
-/**
- * Checks that received data (local storage, request) is a valid copy. Ids are present, values belong to the allowed
- * lists and the quantity is a whole number of at least 1.
- */
-export function isCopy(value: unknown): value is Copy {
-  if (typeof value !== 'object' || value === null) return false;
-  const copy = value as Record<string, unknown>;
+/** Longest id accepted from outside, so a request cannot fill the database with huge keys. */
+export const MAX_ID_LENGTH = 64;
+
+/** Highest quantity of a single copy. */
+export const MAX_COPY_QUANTITY = 9999;
+
+/** Most cards in one add-many, more than the largest set holds. */
+export const MAX_ENTRIES_PER_CHANGE = 500;
+
+// Ids made on the phone, and catalog ids as TCGdex writes them. The Unown cards are the only ones with "!" or "%".
+const COPY_ID = /^[A-Za-z0-9._-]+$/;
+const CATALOG_ID = /^[A-Za-z0-9._!%-]+$/;
+
+const isId = (value: unknown, format = COPY_ID): value is string =>
+  typeof value === 'string' && value.length <= MAX_ID_LENGTH && format.test(value);
+
+const isCatalogId = (value: unknown): value is string => isId(value, CATALOG_ID);
+
+const isQuantity = (value: unknown, min: number): value is number =>
+  Number.isInteger(value) && (value as number) >= min && (value as number) <= MAX_COPY_QUANTITY;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+
+/** Checks that received data is a valid copy input. Values belong to the allowed lists and the quantity is at least 1. */
+export function isCopyInput(value: unknown): value is CopyInput {
+  if (!isRecord(value)) return false;
   return (
-    typeof copy.id === 'string' &&
-    typeof copy.cardId === 'string' &&
-    typeof copy.setId === 'string' &&
-    isVariant(copy.variant) &&
-    isLanguage(copy.language) &&
-    isCondition(copy.condition) &&
-    Number.isInteger(copy.quantity) &&
-    (copy.quantity as number) >= 1
+    isCatalogId(value.cardId) &&
+    isCatalogId(value.setId) &&
+    // A card id is its set id followed by its number.
+    value.cardId.startsWith(`${value.setId}-`) &&
+    isVariant(value.variant) &&
+    isLanguage(value.language) &&
+    isCondition(value.condition) &&
+    isQuantity(value.quantity, 1)
   );
+}
+
+/** Checks that received data (local storage, request) is a valid copy. */
+export function isCopy(value: unknown): value is Copy {
+  return isRecord(value) && isId(value.id) && isCopyInput(value);
+}
+
+/** Checks that a change received from the phone is well formed before it touches the collection. */
+export function isCollectionChange(value: unknown): value is CollectionChange {
+  if (!isRecord(value)) return false;
+  switch (value.type) {
+    case 'add':
+      return isId(value.id) && isCopyInput(value.input);
+    case 'add-many':
+      return (
+        Array.isArray(value.entries) &&
+        value.entries.length > 0 &&
+        value.entries.length <= MAX_ENTRIES_PER_CHANGE &&
+        value.entries.every((entry: unknown) => isRecord(entry) && isId(entry.id) && isCopyInput(entry.input)) &&
+        new Set(value.entries.map((entry: { id: string }) => entry.id)).size === value.entries.length
+      );
+    case 'set-quantity':
+      return isId(value.copyId) && isQuantity(value.quantity, 0);
+    case 'remove':
+      return isId(value.copyId);
+    default:
+      return false;
+  }
 }

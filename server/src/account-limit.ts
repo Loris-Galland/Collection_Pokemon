@@ -14,6 +14,8 @@ const limits = () => db.collection<AccountLimitDocument>('accountLimit');
 export const accountLimitKeys = (userId: string) => ({
   avatarRead: `${userId}:avatar-read`,
   avatarWrite: `${userId}:avatar-write`,
+  collectionRead: `${userId}:collection-read`,
+  collectionWrite: `${userId}:collection-write`,
   twoFactorFailure: `${userId}:two-factor-failure`,
 });
 

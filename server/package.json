@@ -4,14 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsc -p ../shared/tsconfig.build.json",
     "dev": "vercel dev",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "npm run build && tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "typescript": "~6.0.3"
   },
   "dependencies": {
+    "@collection/shared": "*",
     "@better-auth/expo": "^1.7.15",
     "@better-auth/mongo-adapter": "^1.7.15",
     "@better-auth/utils": "^0.5.1",
