@@ -37,6 +37,7 @@ const SETS = {
   svp: 'svp',
   '30th-c': 'me55c',
   '30th': 'me55',
+  me06: 'me6',
 };
 
 // Pictures TCGdex announces without having the file, found by checking each of its addresses.
