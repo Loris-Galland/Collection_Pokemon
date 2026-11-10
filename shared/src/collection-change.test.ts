@@ -6,6 +6,7 @@ import {
   MAX_ENTRIES_PER_CHANGE,
   MAX_ID_LENGTH,
   combinationOf,
+  isChangeId,
   isCollectionChange,
   type CopyInput,
 } from './collection.ts';
@@ -92,5 +93,18 @@ describe('isCollectionChange', () => {
     assert.ok(!isCollectionChange({ type: 'add-many', entries: [] }));
     const entries = Array.from({ length: MAX_ENTRIES_PER_CHANGE + 1 }, (_, index) => ({ id: `${index}`, input }));
     assert.ok(!isCollectionChange({ type: 'add-many', entries }));
+  });
+});
+
+describe('isChangeId', () => {
+  it('accepts the ids the phone makes', () => {
+    assert.equal(isChangeId('mbx3k2-4f9a1c2e'), true);
+    assert.equal(isChangeId('upload-mbx3k2-4f9a1c2e'), true);
+  });
+
+  it('refuses ids that are not plain text of a reasonable length', () => {
+    for (const value of ['', 'a'.repeat(MAX_ID_LENGTH + 1), 'a b', '$where', { id: 'a' }, 42, undefined]) {
+      assert.equal(isChangeId(value), false, String(value));
+    }
   });
 });

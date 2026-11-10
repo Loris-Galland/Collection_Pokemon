@@ -1,4 +1,4 @@
-import { isCollectionChange } from '@collection/shared/compiled';
+import { isChangeId, isCollectionChange } from '@collection/shared/compiled';
 
 import { accountLimitKeys, countEvent } from '../src/account-limit.js';
 import { readCollection, saveCollectionChange } from '../src/collection.js';
@@ -29,7 +29,10 @@ export async function GET(request: Request): Promise<Response> {
   return Response.json({ copies: await readCollection(userId) }, { headers: NO_STORE });
 }
 
-/** Applies one change, sent as `{ change }`, to the collection of the signed in account. */
+/**
+ * Applies one change, sent as `{ changeId, change }`, to the collection of the signed in account. The same change id is
+ * applied only once, so the phone can send a change again.
+ */
 export async function POST(request: Request): Promise<Response> {
   const userId = await signedInUserId(request);
   if (!userId) return unauthorized();
@@ -37,9 +40,9 @@ export async function POST(request: Request): Promise<Response> {
   if (writes > MAX_WRITES_PER_WINDOW) return tooManyRequests();
   const body = await readJsonBody(request, MAX_REQUEST_LENGTH);
   if (body === TOO_LARGE) return tooLarge();
-  const change = (body as { change?: unknown } | null | undefined)?.change;
-  if (!isCollectionChange(change)) return errorResponse('invalid_change', 400);
-  const result = await saveCollectionChange(userId, change);
+  const { changeId, change } = (body ?? {}) as { changeId?: unknown; change?: unknown };
+  if (!isChangeId(changeId) || !isCollectionChange(change)) return errorResponse('invalid_change', 400);
+  const result = await saveCollectionChange(userId, changeId, change);
   if (result === 'full') return errorResponse('collection_full', 409);
   if (result === 'conflict') return errorResponse('id_taken', 409);
   return noContent();

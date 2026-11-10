@@ -3,7 +3,7 @@ import type { CollectionChange, Copy, CopyInput } from '@collection/shared';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { CollectionSource, LoadedCollection } from './collection-source';
+import { CollectionSourceError, type CollectionSource, type LoadedCollection } from './collection-source.ts';
 import { createCollectionStore } from './collection-store.ts';
 
 const input: CopyInput = {
@@ -54,7 +54,7 @@ describe('collection store', () => {
     answers[0]?.resolve();
     await settle();
     assert.deepEqual(ids(store.getState().savedCopies), ['saved', 'new-1']);
-    assert.equal(store.getState().saveFailed, false);
+    assert.equal(store.getState().saveError, undefined);
   });
 
   it('keeps the same list reference when a change is confirmed, so screens are not redrawn', async () => {
@@ -87,7 +87,7 @@ describe('collection store', () => {
 
     answers[0]?.reject(new Error('refused'));
     await settle();
-    assert.equal(store.getState().saveFailed, true);
+    assert.equal(store.getState().saveError, 'other');
     assert.deepEqual(ids(store.getState().copies), ['saved']);
     assert.equal(store.getState().copies[0]?.quantity, 5);
 
@@ -105,16 +105,16 @@ describe('collection store', () => {
     assert.deepEqual(ids(store.getState().copies), ['saved']);
 
     store.dismissSaveError();
-    assert.equal(store.getState().saveFailed, false);
+    assert.equal(store.getState().saveError, undefined);
 
     store.remove('saved');
     await settle();
     answers[1]?.reject(new Error('refused'));
     await settle();
-    assert.equal(store.getState().saveFailed, true);
+    assert.equal(store.getState().saveError, 'other');
 
     store.setQuantity('saved', 2);
-    assert.equal(store.getState().saveFailed, false);
+    assert.equal(store.getState().saveError, undefined);
   });
 
   it('ignores changes when the collection is read-only', async () => {
@@ -193,6 +193,76 @@ describe('adding several copies', () => {
     await new Promise((resolve) => setTimeout(resolve));
 
     assert.equal(store.getState().copies.length, 0);
-    assert.equal(store.getState().saveFailed, true);
+    assert.equal(store.getState().saveError, 'other');
+  });
+});
+
+describe('losing the network', () => {
+  it('says why a change failed and becomes read-only when offline', async () => {
+    const { store, answers } = await loadedStore();
+    store.add(input);
+    await settle();
+    answers[0]?.reject(new CollectionSourceError('offline'));
+    await settle();
+    assert.equal(store.getState().saveError, 'offline');
+    assert.equal(store.getState().status, 'read-only');
+    assert.deepEqual(ids(store.getState().copies), ['saved']);
+  });
+
+  it('stays ready when the collection is full', async () => {
+    const { store, answers } = await loadedStore();
+    store.add(input);
+    await settle();
+    answers[0]?.reject(new CollectionSourceError('full'));
+    await settle();
+    assert.equal(store.getState().saveError, 'full');
+    assert.equal(store.getState().status, 'ready');
+  });
+
+  it('becomes ready again when a new load reaches the source', async () => {
+    let online = false;
+    const source: CollectionSource = {
+      load: async () => ({ copies: [saved], readOnly: !online }),
+      apply: async () => {},
+    };
+    const store = createCollectionStore(source, () => 'id');
+    await store.load();
+    assert.equal(store.getState().status, 'read-only');
+
+    online = true;
+    const statuses: string[] = [];
+    store.subscribe(() => statuses.push(store.getState().status));
+    await store.load();
+    assert.equal(store.getState().status, 'ready');
+    assert.deepEqual(statuses, ['ready'], 'the collection on screen does not flash a loader');
+  });
+
+  it('keeps the collection on screen when a new load fails', async () => {
+    let attempts = 0;
+    const source: CollectionSource = {
+      load: async () => {
+        attempts += 1;
+        if (attempts > 1) throw new Error('offline');
+        return { copies: [saved], readOnly: true };
+      },
+      apply: async () => {},
+    };
+    const store = createCollectionStore(source, () => 'id');
+    await store.load();
+    await store.load();
+    assert.equal(store.getState().status, 'read-only');
+    assert.deepEqual(ids(store.getState().copies), ['saved']);
+  });
+
+  it('does not load again while changes are being saved', async () => {
+    let loads = 0;
+    const fake = fakeSource();
+    const source: CollectionSource = { ...fake.source, load: async () => (loads++, { copies: [saved], readOnly: false }) };
+    const store = createCollectionStore(source, () => 'new');
+    await store.load();
+    store.add(input);
+    await store.load();
+    assert.equal(loads, 1);
+    assert.deepEqual(ids(store.getState().copies), ['saved', 'new']);
   });
 });

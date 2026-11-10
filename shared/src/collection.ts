@@ -160,6 +160,12 @@ const isQuantity = (value: unknown, min: number): value is number =>
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
+/**
+ * Checks the id the phone gives each change it sends. The server applies a change id only once, so the phone can send
+ * a change again when it does not know whether the first try arrived.
+ */
+export const isChangeId = (value: unknown): value is string => isId(value);
+
 /** Checks that received data is a valid copy input. Values belong to the allowed lists and the quantity is at least 1. */
 export function isCopyInput(value: unknown): value is CopyInput {
   if (!isRecord(value)) return false;

@@ -1,6 +1,6 @@
 import { applyCollectionChange, type CollectionChange, type Copy, type CopyInput } from '@collection/shared';
 
-import type { CollectionSource } from './collection-source';
+import { saveFailureOf, type CollectionSource, type SaveFailure } from './collection-source.ts';
 
 /** `unavailable` means the collection could not be loaded, and `read-only` that it can be viewed but not changed. */
 export type CollectionStatus = 'loading' | 'ready' | 'read-only' | 'unavailable';
@@ -11,8 +11,8 @@ export interface CollectionState {
   copies: readonly Copy[];
   /** What the source has confirmed. */
   savedCopies: readonly Copy[];
-  /** The last change could not be saved and was undone. */
-  saveFailed: boolean;
+  /** Why the last change could not be saved. It was undone. */
+  saveError: SaveFailure | undefined;
 }
 
 export interface CollectionActions {
@@ -34,10 +34,11 @@ const NOTHING: readonly Copy[] = [];
 
 /**
  * Keeps the collection in memory and hides its source from the screens. A change shows at once, so the stepper stays
- * quick, and changes reach the source one at a time and in order. A change the source refuses is undone.
+ * quick, and changes reach the source one at a time and in order. A change the source could not save is undone, and
+ * the collection becomes read-only when the network is gone.
  */
 export function createCollectionStore(source: CollectionSource, newId: () => string): CollectionStore {
-  let state: CollectionState = { status: 'loading', copies: NOTHING, savedCopies: NOTHING, saveFailed: false };
+  let state: CollectionState = { status: 'loading', copies: NOTHING, savedCopies: NOTHING, saveError: undefined };
   let loadInProgress: Promise<void> | undefined;
   let unsaved: CollectionChange[] = [];
   let queue = Promise.resolve();
@@ -56,25 +57,36 @@ export function createCollectionStore(source: CollectionSource, newId: () => str
     } catch (error) {
       console.warn('Could not save the collection', error);
       unsaved = unsaved.slice(1);
-      update({ copies: unsaved.reduce(applyCollectionChange, state.savedCopies), saveFailed: true });
+      const saveError = saveFailureOf(error);
+      update({
+        copies: unsaved.reduce(applyCollectionChange, state.savedCopies),
+        saveError,
+        // Without a network the next changes would fail too, so the collection can only be viewed until it comes back.
+        ...(saveError === 'offline' ? { status: 'read-only' as const } : {}),
+      });
     }
   };
 
   const change = (next: CollectionChange) => {
     if (state.status !== 'ready') return;
     unsaved = [...unsaved, next];
-    update({ copies: applyCollectionChange(state.copies, next), saveFailed: false });
+    update({ copies: applyCollectionChange(state.copies, next), saveError: undefined });
     queue = queue.then(() => save(next));
   };
 
   const read = async () => {
-    update({ status: 'loading' });
+    // A new load would wipe the changes still being saved.
+    if (unsaved.length > 0) return;
+    // A collection already on screen stays there while it is read again, so the screens do not flash.
+    const shown = state.status === 'ready' || state.status === 'read-only';
+    if (!shown) update({ status: 'loading' });
     try {
       const { copies, readOnly } = await source.load();
+      if (unsaved.length > 0) return;
       update({ status: readOnly ? 'read-only' : 'ready', copies, savedCopies: copies });
     } catch (error) {
       console.warn('Could not load the collection', error);
-      update({ status: 'unavailable' });
+      if (!shown) update({ status: 'unavailable' });
     }
   };
 
@@ -91,7 +103,7 @@ export function createCollectionStore(source: CollectionSource, newId: () => str
       return loadInProgress;
     },
     dismissSaveError: () => {
-      if (state.saveFailed) update({ saveFailed: false });
+      if (state.saveError) update({ saveError: undefined });
     },
     add: (input) => change({ type: 'add', id: newId(), input }),
     addMany: (inputs) => change({ type: 'add-many', entries: inputs.map((input) => ({ id: newId(), input })) }),

@@ -1,13 +1,16 @@
 import { countOwnedQuantities, type Copy } from '@collection/shared';
+import * as Network from 'expo-network';
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AppState } from 'react-native';
 
-import { adoptLegacyData, collectionKey } from '@/features/account/local-data';
+import { adoptLegacyData, collectionCacheKey, collectionKey } from '@/features/account/local-data';
 import { useAccount } from '@/features/account/use-account';
 import { createId } from '@/lib/id';
 import { StateView } from '@/ui';
 
-import { createLocalCollectionSource } from './collection-source';
+import { requestCollection } from './collection-api';
+import type { CollectionSource, SaveFailure } from './collection-source';
 import {
   createCollectionStore,
   type CollectionActions,
@@ -15,6 +18,8 @@ import {
   type CollectionStatus,
   type CollectionStore,
 } from './collection-store';
+import { createLocalCollectionSource, storedCopies } from './local-collection-source';
+import { createServerCollectionSource } from './server-collection-source';
 
 interface OwnedStore {
   store: CollectionStore;
@@ -40,6 +45,37 @@ function useSelected<T>(store: CollectionStore, select: (state: CollectionState)
   return useSyncExternalStore(store.subscribe, read, read);
 }
 
+/** A signed in account keeps its collection on our server. A visitor has nothing to send there. */
+function sourceFor(ownerId: string | undefined): CollectionSource {
+  if (!ownerId) return createLocalCollectionSource(collectionKey(undefined));
+  return createServerCollectionSource({
+    request: requestCollection,
+    cache: storedCopies(collectionCacheKey(ownerId)),
+    local: storedCopies(collectionKey(ownerId)),
+    newChangeId: createId,
+  });
+}
+
+/** Reads a read-only collection again when the network comes back or the app returns to the screen. */
+function useReconnect(store: CollectionStore | undefined): void {
+  useEffect(() => {
+    if (!store) return;
+    const retry = () => {
+      if (store.getState().status === 'read-only') store.load();
+    };
+    const network = Network.addNetworkStateListener((state) => {
+      if (state.isInternetReachable) retry();
+    });
+    const appState = AppState.addEventListener('change', (next) => {
+      if (next === 'active') retry();
+    });
+    return () => {
+      network.remove();
+      appState.remove();
+    };
+  }, [store]);
+}
+
 /**
  * Gives the screens the collection of the signed in account. The next collection is loaded before it replaces the
  * current one, so the screens stay mounted and navigation is not lost when someone signs in.
@@ -50,7 +86,7 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const store = createCollectionStore(createLocalCollectionSource(collectionKey(ownerId)), createId);
+    const store = createCollectionStore(sourceFor(ownerId), createId);
     const open = async () => {
       if (ownerId) await adoptLegacyData(ownerId).catch((error) => console.warn('Could not move old data', error));
       await store.load();
@@ -61,6 +97,8 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [ownerId]);
+
+  useReconnect(owned?.store);
 
   // Only on the very first load. Later the current collection stays on screen until the next one is ready.
   if (!owned) return <StateView loading />;
@@ -107,11 +145,11 @@ export function useCollectionStatus(): CollectionStatus {
   return useSelected(useStore(), (state) => state.status);
 }
 
-/** Whether the last change could not be saved, and how to clear that message. */
-export function useCollectionSaveError(): { saveFailed: boolean; dismiss: () => void } {
+/** Why the last change could not be saved, if it could not, and how to clear that message. */
+export function useCollectionSaveError(): { saveError: SaveFailure | undefined; dismiss: () => void } {
   const store = useStore();
-  const saveFailed = useSelected(store, (state) => state.saveFailed);
-  return { saveFailed, dismiss: store.dismissSaveError };
+  const saveError = useSelected(store, (state) => state.saveError);
+  return { saveError, dismiss: store.dismissSaveError };
 }
 
 /** The add, edit and remove actions, stable until the account changes. */

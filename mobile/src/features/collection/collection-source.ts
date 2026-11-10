@@ -1,6 +1,4 @@
-import { applyCollectionChange, isCopy, type CollectionChange, type Copy } from '@collection/shared';
-
-import { readJson, writeJson } from '@/lib/storage';
+import type { CollectionChange, Copy } from '@collection/shared';
 
 /** What a source returns on startup. A read-only collection can be viewed but not changed. */
 export interface LoadedCollection {
@@ -14,21 +12,22 @@ export interface CollectionSource {
   apply(change: CollectionChange): Promise<void>;
 }
 
-// Keeps the valid copies only, so one corrupted entry does not cost the whole collection.
-const restoreCopies = (value: unknown): Copy[] | undefined => (Array.isArray(value) ? value.filter(isCopy) : undefined);
+/**
+ * Why a change could not be saved. `offline` means the server could not be reached, `full` that the collection holds
+ * the most copies allowed, and `signed-out` that the session has ended.
+ */
+export type SaveFailure = 'offline' | 'full' | 'signed-out' | 'other';
 
-/** Prototype only. The collection lives on the phone until the server (MongoDB) takes over. */
-export function createLocalCollectionSource(storageKey: string): CollectionSource {
-  let stored: Copy[] = [];
-  return {
-    async load() {
-      stored = await readJson<Copy[]>(storageKey, [], restoreCopies);
-      return { copies: stored, readOnly: false };
-    },
-    async apply(change) {
-      const next = applyCollectionChange(stored, change);
-      await writeJson(storageKey, next);
-      stored = next;
-    },
-  };
+/** The error a source rejects with when it knows why a change failed. */
+export class CollectionSourceError extends Error {
+  readonly reason: SaveFailure;
+
+  constructor(reason: SaveFailure) {
+    super(`The collection could not be saved (${reason})`);
+    this.reason = reason;
+  }
+}
+
+export function saveFailureOf(error: unknown): SaveFailure {
+  return error instanceof CollectionSourceError ? error.reason : 'other';
 }

@@ -9,10 +9,19 @@ export interface CopyDocument extends Copy {
 
 export const copies = () => db.collection<CopyDocument>('copy');
 
+/** A change the server has already saved, kept for a while so that the same change sent again is not saved twice. */
+export interface AppliedChangeDocument {
+  userId: string;
+  changeId: string;
+  appliedAt: Date;
+}
+
+export const appliedChanges = () => db.collection<AppliedChangeDocument>('appliedCollectionChange');
+
 /**
  * Apart from the rest of the collection code on purpose. The sign in imports it, and it must keep working even if the
  * compiled shared package failed to deploy.
  */
 export async function deleteCollection(userId: string): Promise<void> {
-  await copies().deleteMany({ userId });
+  await Promise.all([copies().deleteMany({ userId }), appliedChanges().deleteMany({ userId })]);
 }
