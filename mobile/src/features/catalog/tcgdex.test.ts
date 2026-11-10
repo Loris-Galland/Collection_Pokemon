@@ -236,3 +236,29 @@ describe('searchCards', () => {
     assert.deepEqual(cards, []);
   });
 });
+
+describe('prices that belong to another card', () => {
+  // TCGdex gave the three Mega Rayquaza ex of Delta Reign the price of the plain one.
+  const pricedCard = (localId: string) => ({
+    id: `me06-${localId}`,
+    localId,
+    name: 'Méga-Rayquaza-ex',
+    image: `${ASSETS}/fr/me/me06/${localId}`,
+    variants: { holo: true },
+    set: { id: 'me06', name: 'Règne Delta', cardCount },
+    pricing: { cardmarket: { idProduct: 918912, avg: 7.49, trend: 4.43, avg30: 4.42 } },
+  });
+
+  it('keeps the price of the base print', async () => {
+    mockApi({ 'fr/cards/me06-084': pricedCard('084') });
+    const { prices } = await fetchCard('fr', 'me06-084');
+    assert.equal(prices[0]?.amount, 7.49);
+  });
+
+  it('shows no price for a rarer print linked to the same Cardmarket product', async () => {
+    mockApi({ 'fr/cards/me06-138': pricedCard('138') });
+    const { prices, trends } = await fetchCard('fr', 'me06-138');
+    assert.deepEqual(prices, []);
+    assert.deepEqual(trends, []);
+  });
+});

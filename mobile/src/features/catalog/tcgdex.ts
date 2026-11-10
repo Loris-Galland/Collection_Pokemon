@@ -18,6 +18,7 @@ import {
 } from '@collection/shared';
 
 import { POKEMON_TCG_IMAGES } from './pokemon-tcg-images.ts';
+import { UNRELIABLE_PRICES } from './unreliable-prices.ts';
 
 const API_URL = 'https://api.tcgdex.net/v2';
 
@@ -34,6 +35,11 @@ const setIdOf = (cardId: string) => cardId.slice(0, cardId.lastIndexOf('-'));
 /** The picture of a card that TCGdex lacks in every language or announces without having. */
 function pokemonTcgImage(cardId: string): string | undefined {
   return POKEMON_TCG_IMAGES[setIdOf(cardId)]?.images[cardId];
+}
+
+/** A card whose Cardmarket price on TCGdex belongs to another card. It shows no price rather than a wrong one. */
+function hasUnreliablePrice(cardId: string): boolean {
+  return UNRELIABLE_PRICES[setIdOf(cardId)]?.includes(cardId) ?? false;
 }
 
 interface ApiCardCount {
@@ -204,7 +210,7 @@ export async function fetchCard(language: CatalogLanguage, cardId: string): Prom
     rarity: api.rarity,
     variants: toVariants(api.variants),
   };
-  const market = api.pricing?.cardmarket;
+  const market = hasUnreliablePrice(api.id) ? undefined : api.pricing?.cardmarket;
   return {
     card,
     set: toCardSet(api.set),
