@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
-import { Button, Text, TextField, colors, radius, spacing } from '@/ui';
+import { Button, PasswordField, Text, TextField, colors, radius, spacing } from '@/ui';
 
 import { authClient } from './auth-client';
 import { FormError } from './form-error';
@@ -108,11 +108,10 @@ export function TwoFactorSetup() {
       <Text variant="caption" tone="muted">
         {t('account.twoFactorStart')}
       </Text>
-      <TextField
+      <PasswordField
         label={t('account.currentPassword')}
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         autoComplete="current-password"
         textContentType="password"
       />

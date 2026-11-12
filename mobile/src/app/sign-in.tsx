@@ -14,6 +14,7 @@ import {
   CreateAccountIcon,
   GoogleIcon,
   KeyboardScrollView,
+  PasswordField,
   SegmentedControl,
   SignInIcon,
   Text,
@@ -111,11 +112,10 @@ export default function SignInScreen() {
         autoComplete="email"
         textContentType="emailAddress"
       />
-      <TextField
+      <PasswordField
         label={t('account.password')}
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         autoComplete={creating ? 'new-password' : 'current-password'}
         textContentType={creating ? 'newPassword' : 'password'}
         onSubmitEditing={incomplete ? undefined : submit}

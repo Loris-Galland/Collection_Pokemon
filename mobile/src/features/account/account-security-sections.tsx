@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
-import { Button, Text, TextField, colors, radius, spacing } from '@/ui';
+import { Button, PasswordField, Text, TextField, colors, radius, spacing } from '@/ui';
 
 import { authClient, withTwoFactorCode } from './auth-client';
 import { forgetAvatar } from './avatar';
@@ -12,14 +12,13 @@ import { TwoFactorSetup } from './two-factor-setup';
 import { leaveAccountScreen } from './use-account';
 import { useAccountRequest } from './use-account-request';
 
-function PasswordField({ value, onChangeText }: { value: string; onChangeText: (value: string) => void }) {
+function CurrentPasswordField({ value, onChangeText }: { value: string; onChangeText: (value: string) => void }) {
   const { t } = useTranslation();
   return (
-    <TextField
+    <PasswordField
       label={t('account.currentPassword')}
       value={value}
       onChangeText={onChangeText}
-      secureTextEntry
       autoComplete="current-password"
       textContentType="password"
     />
@@ -72,7 +71,7 @@ export function TwoFactorSection({ hasPassword, enabled }: { hasPassword: boolea
         <Text variant="caption" style={{ color: colors.success }}>
           {t('account.enabled')}
         </Text>
-        <PasswordField value={password} onChangeText={setPassword} />
+        <CurrentPasswordField value={password} onChangeText={setPassword} />
         <CodeField value={code} onChangeText={setCode} />
         <FormError message={error} />
         <Button label={t('account.disable')} variant="secondary" disabled={busy || !password || !code.trim()} onPress={disable} />
@@ -131,7 +130,7 @@ export function DeleteAccountSection({ userId, hasPassword, twoFactorEnabled }: 
       </Text>
       {confirming ? (
         <>
-          {hasPassword && <PasswordField value={password} onChangeText={setPassword} />}
+          {hasPassword && <CurrentPasswordField value={password} onChangeText={setPassword} />}
           {twoFactorEnabled && <CodeField value={code} onChangeText={setCode} />}
           <FormError message={error} />
           <Button

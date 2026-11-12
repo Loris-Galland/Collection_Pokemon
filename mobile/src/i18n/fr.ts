@@ -14,6 +14,8 @@ export const fr = {
     save: 'Enregistrer',
     create: 'Créer',
     close: 'Fermer',
+    showPassword: 'Afficher le mot de passe',
+    hidePassword: 'Masquer le mot de passe',
     delete: 'Supprimer',
     rename: 'Renommer',
     cards_one: '{{count}} carte',
@@ -329,10 +331,10 @@ export const fr = {
     howLongTitle: 'Combien de temps',
     howLongAccount: 'Ton compte : jusqu’à ce que tu le supprimes.',
     howLongPhoto: 'Ta photo de profil : jusqu’à ce que tu la retires ou que tu supprimes ton compte.',
-    howLongSessions: 'Tes sessions : elles expirent après 7 jours sans utilisation, puis sont effacées.',
-    howLongAttempts: 'Les tentatives de connexion et les compteurs de requêtes : 48 heures au plus.',
     howLongCollection:
       'Ta collection : jusqu’à ce que tu retires tes exemplaires ou que tu supprimes ton compte. Chaque modification laisse aussi une trace sans contenu pendant 30 jours, pour qu’elle ne soit jamais enregistrée deux fois.',
+    howLongSessions: 'Tes sessions : elles expirent après 7 jours sans utilisation, puis sont effacées.',
+    howLongAttempts: 'Les tentatives de connexion et les compteurs de requêtes : 48 heures au plus.',
     whoTitle: 'Qui y a accès',
     whoHosting:
       'Vercel (serveur) et MongoDB Atlas (base de données), configurés pour héberger les données à Paris. Ces entreprises sont américaines, et un accès depuis les États-Unis ne peut pas être totalement exclu.',

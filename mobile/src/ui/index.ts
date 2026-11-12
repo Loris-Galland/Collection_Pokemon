@@ -8,6 +8,7 @@ export * from './grid';
 export * from './heart-button';
 export * from './icons';
 export * from './keyboard-scroll-view';
+export * from './password-field';
 export * from './pressable-scale';
 export * from './pokeball-loader';
 export * from './progress-bar';

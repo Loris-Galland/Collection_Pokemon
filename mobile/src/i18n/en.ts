@@ -16,6 +16,8 @@ export const en: Translation = {
     save: 'Save',
     create: 'Create',
     close: 'Close',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     delete: 'Delete',
     rename: 'Rename',
     cards_one: '{{count}} card',
@@ -328,10 +330,10 @@ export const en: Translation = {
     howLongTitle: 'How long',
     howLongAccount: 'Your account. Until you delete it.',
     howLongPhoto: 'Your profile picture. Until you remove it or delete your account.',
-    howLongSessions: 'Your sessions. They expire after 7 days without use, then are erased.',
-    howLongAttempts: 'Sign in attempts and request counters. 48 hours at most.',
     howLongCollection:
       'Your collection. Until you remove your copies or delete your account. Each change also leaves a trace with no content for 30 days, so that it is never saved twice.',
+    howLongSessions: 'Your sessions. They expire after 7 days without use, then are erased.',
+    howLongAttempts: 'Sign in attempts and request counters. 48 hours at most.',
     whoTitle: 'Who can access it',
     whoHosting:
       'Vercel (server) and MongoDB Atlas (database), set up to host the data in Paris. These companies are American, and access from the United States cannot be fully ruled out.',
