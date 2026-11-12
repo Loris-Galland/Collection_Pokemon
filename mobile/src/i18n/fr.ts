@@ -94,6 +94,8 @@ export const fr = {
     notFound: 'Carte introuvable',
     obtained: '✓ Obtenue ! Retirée de ta liste d’envies.',
     indicativePrice: 'Prix indicatif Cardmarket',
+    variantsExplained:
+      'Normale, holo et reverse désignent l’impression de la carte, pas son état. Chaque prix est la moyenne des ventes des 7 derniers jours, tous états confondus.',
     sharedShinyPrice: 'Cardmarket ne donne qu’un prix pour les versions brillantes : holo et reverse affichent le même.',
     myCopies: 'Mes exemplaires',
     add: 'Ajouter',
@@ -103,6 +105,9 @@ export const fr = {
   priceTrend: {
     title: 'Tendance du prix',
     noSales: 'Pas encore de ventes suivies sur Cardmarket pour cette carte.',
+    otherPrint:
+      'Prix indisponible : TCGdex, qui fournit nos prix, donne à cette carte celui d’une autre version de l’extension. Nous préférons ne rien afficher plutôt qu’un prix faux.',
+    notLinked: 'Prix indisponible : TCGdex, qui fournit nos prix, ne relie pas encore cette carte à Cardmarket.',
     change: '{{arrow}} {{percent}} % sur {{period}}',
     days30: '30 j',
     days7: '7 j',

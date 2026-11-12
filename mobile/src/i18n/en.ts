@@ -95,6 +95,8 @@ export const en: Translation = {
   card: {
     notFound: 'Card not found',
     obtained: '✓ Got it! Removed from your wishes.',
+    variantsExplained:
+      'Normal, holo and reverse are how the card was printed, not its condition. Each price is the average of the sales of the last 7 days, all conditions together.',
     indicativePrice: 'Indicative Cardmarket price',
     sharedShinyPrice: 'Cardmarket gives a single price for shiny versions, so holo and reverse show the same one.',
     myCopies: 'My copies',
@@ -104,6 +106,9 @@ export const en: Translation = {
   },
   priceTrend: {
     title: 'Price trend',
+    otherPrint:
+      'Price unavailable. TCGdex, which provides our prices, gives this card the price of another print of the set. We would rather show nothing than a wrong price.',
+    notLinked: 'Price unavailable. TCGdex, which provides our prices, does not link this card to Cardmarket yet.',
     noSales: 'No Cardmarket sales tracked for this card yet.',
     change: '{{arrow}} {{percent}}% over {{period}}',
     days30: '30 d',

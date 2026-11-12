@@ -38,7 +38,7 @@ export default function CardScreen() {
   }
   if (!data) return <StateView loading />;
 
-  const { card, set, prices, trends } = data;
+  const { card, set, prices, trends, missingPrice } = data;
   const ownedCopies = copiesOfCard(copies, card.id);
 
   return (
@@ -65,7 +65,7 @@ export default function CardScreen() {
           )}
         </View>
 
-        <PriceTrendCard trends={trends} />
+        <PriceTrendCard trends={trends} missingPrice={missingPrice} />
 
         <View style={styles.section}>
           <Text variant="overline" tone="muted">
@@ -82,6 +82,9 @@ export default function CardScreen() {
               </View>
             );
           })}
+          <Text variant="caption" tone="faint">
+            {t('card.variantsExplained')}
+          </Text>
           {sharesShinyPrice(card.variants) && (
             <Text variant="caption" tone="faint">
               {t('card.sharedShinyPrice')}

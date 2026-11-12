@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { formatEuros } from '@/lib/format';
+import type { MissingPrice } from './tcgdex';
 import { AreaChart, Chip, Text, colors, radius, spacing, type ChartPoint } from '@/ui';
 
 /** Chart points from oldest to newest. Missing averages are skipped. */
@@ -29,7 +30,13 @@ function change(points: readonly ChartPoint[]): number | undefined {
  * Price trend of a card in the style of Cardmarket. Shows the 30, 7 and 1 day averages as a curve, then the key
  * figures.
  */
-export function PriceTrendCard({ trends }: { trends: readonly PriceTrend[] }) {
+export function PriceTrendCard({
+  trends,
+  missingPrice,
+}: {
+  trends: readonly PriceTrend[];
+  missingPrice?: MissingPrice;
+}) {
   const { t } = useTranslation();
   const [selectedVariant, setSelectedVariant] = useState(trends[0]?.variant);
   const trend = trends.find((entry) => entry.variant === selectedVariant) ?? trends[0];
@@ -42,7 +49,13 @@ export function PriceTrendCard({ trends }: { trends: readonly PriceTrend[] }) {
         <Text variant="overline" tone="muted">
           {t('priceTrend.title')}
         </Text>
-        <Text tone="muted">{t('priceTrend.noSales')}</Text>
+        <Text tone="muted">
+          {missingPrice === 'other-print'
+            ? t('priceTrend.otherPrint')
+            : missingPrice === 'not-linked'
+              ? t('priceTrend.notLinked')
+              : t('priceTrend.noSales')}
+        </Text>
       </View>
     );
   }

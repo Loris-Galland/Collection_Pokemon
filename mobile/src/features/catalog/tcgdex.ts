@@ -81,11 +81,19 @@ export interface SetWithCards {
   cards: Card[];
 }
 
+/**
+ * Why a card has no price although it sells. `other-print` means TCGdex gave it the Cardmarket product of another print
+ * of the set, so the price is hidden. `not-linked` means TCGdex links it to no Cardmarket product at all.
+ */
+export type MissingPrice = 'other-print' | 'not-linked';
+
 export interface CardDetail {
   card: Card;
   set: CardSet;
   prices: Price[];
   trends: PriceTrend[];
+  /** Set only when the card has no price for one of these reasons. */
+  missingPrice?: MissingPrice;
 }
 
 export type ImageQuality = 'low' | 'high';
@@ -210,12 +218,15 @@ export async function fetchCard(language: CatalogLanguage, cardId: string): Prom
     rarity: api.rarity,
     variants: toVariants(api.variants),
   };
-  const market = hasUnreliablePrice(api.id) ? undefined : api.pricing?.cardmarket;
+  const otherPrint = hasUnreliablePrice(api.id);
+  const market = otherPrint ? undefined : api.pricing?.cardmarket;
+  const missingPrice: MissingPrice | undefined = otherPrint ? 'other-print' : market ? undefined : 'not-linked';
   return {
     card,
     set: toCardSet(api.set),
     prices: readCardmarketPrices(card, market),
     trends: readCardmarketTrends(card, market),
+    missingPrice,
   };
 }
 

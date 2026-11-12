@@ -258,8 +258,22 @@ describe('prices that belong to another card', () => {
 
   it('shows no price for a rarer print linked to the same Cardmarket product', async () => {
     mockApi({ 'fr/cards/me06-138': pricedCard('138') });
-    const { prices, trends } = await fetchCard('fr', 'me06-138');
+    const { prices, trends, missingPrice } = await fetchCard('fr', 'me06-138');
     assert.deepEqual(prices, []);
     assert.deepEqual(trends, []);
+    assert.equal(missingPrice, 'other-print', 'the screen must not claim the card has no sales');
+  });
+
+  it('tells when TCGdex links a card to no Cardmarket product', async () => {
+    // M Lucario EX 55 of Furious Fists, which sells on Cardmarket but has no pricing on TCGdex.
+    mockApi({ 'fr/cards/xy3-55': { ...pricedCard('055'), id: 'xy3-55', pricing: { cardmarket: null } } });
+    const { missingPrice } = await fetchCard('fr', 'xy3-55');
+    assert.equal(missingPrice, 'not-linked');
+  });
+
+  it('gives no reason when the card has a price', async () => {
+    mockApi({ 'fr/cards/me06-084': pricedCard('084') });
+    const { missingPrice } = await fetchCard('fr', 'me06-084');
+    assert.equal(missingPrice, undefined);
   });
 });
