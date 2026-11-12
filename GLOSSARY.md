@@ -31,7 +31,7 @@ Une version d'impression d'une même carte (normale, holo, reverse holo…).
 _À éviter_ : version, finition
 
 **Prix** :
-Le prix moyen constaté sur Cardmarket, en euros, pour une carte dans une variante donnée, toutes langues et tous états confondus. C'est un prix indicatif, pas un prix de vente réel.
+Le prix moyen des ventes Cardmarket sur les 7 derniers jours, en euros, pour une carte dans une variante donnée, toutes langues et tous états confondus. Sans vente sur 7 jours, c'est la moyenne sur 30 jours, puis la moyenne longue de Cardmarket, qui garde longtemps les prix de la sortie d'une extension. C'est un prix indicatif, pas un prix de vente réel.
 _À éviter_ : cote, valeur (réservé à la collection)
 
 **Tendance du prix** :

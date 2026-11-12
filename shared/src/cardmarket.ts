@@ -12,8 +12,9 @@ export type CardmarketPricing = { updated: string } & Partial<
 type PricedCard = Pick<Card, 'id' | 'variants'>;
 
 /**
- * Cardmarket only gives two prices per card, `avg` for the base print and `avg-holo` for the shiny one. A holo card
- * without a normal print has its price in `avg`. Otherwise holo and reverse both use `avg-holo`.
+ * Cardmarket only gives two sets of prices per card, such as `avg7` for the base print and `avg7-holo` for the shiny
+ * one. A holo card without a normal print has its prices in the base fields. Otherwise holo and reverse both use the
+ * `-holo` fields.
  */
 function priceSuffix(variants: readonly Variant[], variant: Variant): '' | '-holo' | undefined {
   switch (variant) {
@@ -44,11 +45,17 @@ function readField(market: CardmarketPricing, card: PricedCard, variant: Variant
   return market[`${field}${suffix}`] || undefined;
 }
 
+/**
+ * Fields read for the price, in order. The 7 day average follows a drop within days without jumping at each sale. The
+ * long average `avg` keeps the launch prices of a set for months, so it only stands in for a card that rarely sells.
+ */
+const PRICE_FIELDS = ['avg7', 'avg30', 'avg'] as const satisfies readonly CardmarketField[];
+
 /** Price of each variant of a card that has one. */
 export function readCardmarketPrices(card: PricedCard, market: CardmarketPricing | null | undefined): Price[] {
   if (!market) return [];
   return card.variants.flatMap((variant) => {
-    const amount = readField(market, card, variant, 'avg');
+    const amount = PRICE_FIELDS.map((field) => readField(market, card, variant, field)).find(Boolean);
     return amount ? [{ cardId: card.id, variant, amount, currency: 'EUR' as const, updatedAt: market.updated }] : [];
   });
 }

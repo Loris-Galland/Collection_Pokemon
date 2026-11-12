@@ -252,7 +252,8 @@ describe('prices that belong to another card', () => {
   it('keeps the price of the base print', async () => {
     mockApi({ 'fr/cards/me06-084': pricedCard('084') });
     const { prices } = await fetchCard('fr', 'me06-084');
-    assert.equal(prices[0]?.amount, 7.49);
+    // No 7 day average here, so the price is the 30 day one.
+    assert.equal(prices[0]?.amount, 4.42);
   });
 
   it('shows no price for a rarer print linked to the same Cardmarket product', async () => {
