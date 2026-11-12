@@ -263,12 +263,13 @@ export const fr = {
     noAuthenticator: 'Aucune application d’authentification trouvée. Installes-en une, ou recopie la clé ci-dessous.',
     deleteTitle: 'Supprimer mon compte',
     deleteText:
-      'Ton compte et ce qu’il a enregistré sur ce téléphone seront supprimés définitivement. Cette action est irréversible.',
+      'Ton compte, ta collection et ta photo seront supprimés définitivement de notre serveur, comme ce que ton compte a enregistré sur ce téléphone. Cette action est irréversible.',
     deleteForGood: 'Supprimer définitivement',
     profile: 'Mon profil',
     pseudoSaved: '✓ Pseudo enregistré',
     myData: 'Mes données',
-    exportText: 'Récupère une copie de ton compte, de ta photo, de ta collection et de tes envies au format JSON.',
+    exportText:
+      'Récupère au format JSON tout ce que notre serveur garde sur toi (compte, connexions, photo, collection), avec tes envies.',
     exportFailed: 'L’export n’a pas pu se faire. Vérifie ta connexion, puis réessaie.',
     export: 'Exporter mes données',
     exportTitle: 'Mes données Holo',
@@ -312,21 +313,26 @@ export const fr = {
     controller: 'Loris, éditeur de l’application Holo, projet personnel et non commercial.',
     dataTitle: 'Ce que nous enregistrons',
     dataAccount:
-      'Ton compte : e-mail, pseudo et mot de passe haché (il n’est jamais conservé en clair), ou ton nom et ton e-mail si tu utilises Google.',
+      'Ton compte : e-mail, pseudo et mot de passe haché (il n’est jamais conservé en clair), ou ton nom, ton e-mail, ton identifiant Google et l’adresse de ta photo Google si tu utilises Google.',
     dataPhoto:
       'Ta photo de profil, si tu en ajoutes une : une version réduite, sans ses métadonnées, conservée sur notre serveur et visible seulement par toi.',
     dataSecurity: 'Ta sécurité : le secret et les codes de secours de la validation en deux étapes, sous forme chiffrée.',
     dataSessions:
-      'Tes connexions : l’adresse IP et le type d’appareil de chaque session, et l’adresse IP des tentatives de connexion.',
+      'Tes connexions : l’adresse IP de chaque session et la description de l’appareil et de l’application envoyée par ton téléphone, ainsi que l’adresse IP des tentatives de connexion.',
+    dataCounters:
+      'Tes requêtes : des compteurs liés à ton compte, qui limitent le nombre de requêtes pour protéger le service.',
     dataCollection:
-      'Ta collection et tes envies : elles restent pour l’instant sur ton téléphone et ne nous sont pas envoyées.',
+      'Ta collection : chaque exemplaire (carte, variante, langue, état, quantité) est conservé sur notre serveur, pour que tu le retrouves sur tous tes téléphones. Une copie reste sur ton téléphone pour la consultation hors connexion.',
+    dataWishes: 'Tes envies : elles restent pour l’instant sur ton téléphone et ne nous sont pas envoyées.',
     whyTitle: 'Pourquoi',
     why: 'Pour te fournir le service que tu demandes en créant un compte (exécution du contrat), et pour protéger les comptes contre les accès frauduleux (intérêt légitime). Nous n’utilisons ni publicité, ni revente, ni outil de suivi.',
     howLongTitle: 'Combien de temps',
     howLongAccount: 'Ton compte : jusqu’à ce que tu le supprimes.',
     howLongPhoto: 'Ta photo de profil : jusqu’à ce que tu la retires ou que tu supprimes ton compte.',
     howLongSessions: 'Tes sessions : elles expirent après 7 jours sans utilisation, puis sont effacées.',
-    howLongAttempts: 'Les tentatives de connexion : 48 heures au plus.',
+    howLongAttempts: 'Les tentatives de connexion et les compteurs de requêtes : 48 heures au plus.',
+    howLongCollection:
+      'Ta collection : jusqu’à ce que tu retires tes exemplaires ou que tu supprimes ton compte. Chaque modification laisse aussi une trace sans contenu pendant 30 jours, pour qu’elle ne soit jamais enregistrée deux fois.',
     whoTitle: 'Qui y a accès',
     whoHosting:
       'Vercel (serveur) et MongoDB Atlas (base de données), configurés pour héberger les données à Paris. Ces entreprises sont américaines, et un accès depuis les États-Unis ne peut pas être totalement exclu.',
@@ -343,7 +349,7 @@ export const fr = {
     rightsInApp:
       'Dans Réglages, puis Mon compte, tu peux modifier ton pseudo et ta photo, exporter tes données et supprimer ton compte.',
     rightsCnil: 'Tu peux aussi adresser une réclamation à la CNIL (cnil.fr).',
-    updated: 'Dernière mise à jour : 3 novembre 2026.',
+    updated: 'Dernière mise à jour : 12 novembre 2026.',
   },
 };
 

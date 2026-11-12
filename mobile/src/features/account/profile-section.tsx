@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Share, StyleSheet, View } from 'react-native';
 
-import { useCopies } from '@/features/collection/collection-provider';
 import { useWishlist } from '@/features/wishlist/wishlist-provider';
 import { Button, Text, TextField, colors, radius, spacing } from '@/ui';
 
 import { authClient } from './auth-client';
-import { loadAvatar } from './avatar';
 import { AvatarPicker } from './avatar-picker';
+import { fetchAccountExport } from './export-api';
 import { FormError } from './form-error';
 import { useAccountRequest } from './use-account-request';
 
@@ -70,33 +69,31 @@ export function ProfileSection({ user }: { user: ProfileUser }) {
   );
 }
 
-/** Gives the user a copy of their data, as JSON, through the share sheet of the phone. */
-export function ExportSection({ user }: { user: ProfileUser }) {
+/**
+ * Gives the user a copy of their data, as JSON, through the share sheet of the phone. It comes from the server, so it
+ * holds everything kept there, and the wishes are added from the phone, where they still live.
+ */
+export function ExportSection() {
   const { t } = useTranslation();
-  const copies = useCopies();
   const { wishlists, wishes } = useWishlist();
   const [failed, setFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const exportData = async () => {
     setFailed(false);
+    setBusy(true);
     try {
       const data = {
         exportedAt: new Date().toISOString(),
-        account: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          createdAt: user.createdAt,
-          twoFactorEnabled: Boolean(user.twoFactorEnabled),
-          avatarJpegBase64: await loadAvatar(user.id),
-        },
-        collection: copies,
+        ...(await fetchAccountExport()),
         wishlists,
         wishes,
       };
       await Share.share({ title: t('account.exportTitle'), message: JSON.stringify(data, null, 2) });
     } catch {
       setFailed(true);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -107,7 +104,12 @@ export function ExportSection({ user }: { user: ProfileUser }) {
         {t('account.exportText')}
       </Text>
       {failed && <FormError message={t('account.exportFailed')} />}
-      <Button label={t('account.export')} variant="secondary" onPress={exportData} />
+      <Button
+        label={busy ? t('common.wait') : t('account.export')}
+        variant="secondary"
+        disabled={busy}
+        onPress={exportData}
+      />
     </View>
   );
 }

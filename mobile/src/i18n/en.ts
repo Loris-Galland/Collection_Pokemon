@@ -262,12 +262,14 @@ export const en: Translation = {
     copyKey: 'Or copy this key:',
     noAuthenticator: 'No authenticator app found. Install one, or copy the key below.',
     deleteTitle: 'Delete my account',
-    deleteText: 'Your account and what it saved on this phone will be deleted for good. This cannot be undone.',
+    deleteText:
+      'Your account, your collection and your picture will be deleted for good from our server, along with what your account saved on this phone. This cannot be undone.',
     deleteForGood: 'Delete for good',
     profile: 'My profile',
     pseudoSaved: '✓ Username saved',
     myData: 'My data',
-    exportText: 'Get a copy of your account, your picture, your collection and your wishes as JSON.',
+    exportText:
+      'Get as JSON everything our server keeps about you (account, sign ins, picture, collection), along with your wishes.',
     exportFailed: 'The export did not work. Check your connection, then try again.',
     export: 'Export my data',
     exportTitle: 'My Holo data',
@@ -311,19 +313,25 @@ export const en: Translation = {
     controller: 'Loris, publisher of the Holo app, a personal and non commercial project.',
     dataTitle: 'What we save',
     dataAccount:
-      'Your account. Email, username and hashed password (it is never kept in clear text), or your name and email if you use Google.',
+      'Your account. Email, username and hashed password (it is never kept in clear text), or your name, your email, your Google id and the address of your Google picture if you use Google.',
     dataPhoto:
       'Your profile picture, if you add one. A reduced version without its metadata, kept on our server and visible only to you.',
     dataSecurity: 'Your security. The secret and the backup codes of two-step verification, encrypted.',
-    dataSessions: 'Your sign ins. The IP address and device type of each session, and the IP address of sign in attempts.',
-    dataCollection: 'Your collection and your wishes. For now they stay on your phone and are not sent to us.',
+    dataSessions:
+      'Your sign ins. The IP address of each session and the description of the device and app sent by your phone, along with the IP address of sign in attempts.',
+    dataCounters: 'Your requests. Counters tied to your account, which limit the number of requests to protect the service.',
+    dataCollection:
+      'Your collection. Each copy (card, variant, language, condition, quantity) is kept on our server, so you find it on all your phones. A copy of it stays on your phone so you can browse it offline.',
+    dataWishes: 'Your wishes. For now they stay on your phone and are not sent to us.',
     whyTitle: 'Why',
     why: 'To provide the service you ask for by creating an account (performance of a contract), and to protect accounts against fraudulent access (legitimate interest). We use no advertising, no data resale and no tracking tool.',
     howLongTitle: 'How long',
     howLongAccount: 'Your account. Until you delete it.',
     howLongPhoto: 'Your profile picture. Until you remove it or delete your account.',
     howLongSessions: 'Your sessions. They expire after 7 days without use, then are erased.',
-    howLongAttempts: 'Sign in attempts. 48 hours at most.',
+    howLongAttempts: 'Sign in attempts and request counters. 48 hours at most.',
+    howLongCollection:
+      'Your collection. Until you remove your copies or delete your account. Each change also leaves a trace with no content for 30 days, so that it is never saved twice.',
     whoTitle: 'Who can access it',
     whoHosting:
       'Vercel (server) and MongoDB Atlas (database), set up to host the data in Paris. These companies are American, and access from the United States cannot be fully ruled out.',
@@ -340,6 +348,6 @@ export const en: Translation = {
     rightsInApp:
       'In Settings, then My account, you can change your username and picture, export your data and delete your account.',
     rightsCnil: 'You can also file a complaint with the CNIL, the French data protection authority (cnil.fr).',
-    updated: 'Last updated on 3 November 2026.',
+    updated: 'Last updated on 12 November 2026.',
   },
 };

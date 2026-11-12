@@ -2,11 +2,8 @@ import { expo } from '@better-auth/expo';
 import { mongodbAdapter } from '@better-auth/mongo-adapter';
 import { betterAuth } from 'better-auth';
 import { twoFactor } from 'better-auth/plugins';
-import { ObjectId } from 'mongodb';
 
-import { clearAccountLimits } from './account-limit.js';
-import { deleteAvatar } from './avatar.js';
-import { deleteCollection } from './copies.js';
+import { eraseBeforeUserDeletion, eraseAfterUserDeletion } from './account-data.js';
 import { db, mongoClient } from './db.js';
 import { requireTwoFactorCode } from './two-factor-guard.js';
 
@@ -39,16 +36,8 @@ export const auth = betterAuth({
   user: {
     deleteUser: {
       enabled: true,
-      // Better Auth removes the user, its sessions and its accounts, but leaves the two-factor secret, the backup codes
-      // and our own collections.
-      beforeDelete: async (user) => {
-        await Promise.all([
-          db.collection('twoFactor').deleteMany({ userId: new ObjectId(user.id) }),
-          deleteAvatar(user.id),
-          deleteCollection(user.id),
-          clearAccountLimits(user.id),
-        ]);
-      },
+      beforeDelete: (user) => eraseBeforeUserDeletion(user.id),
+      afterDelete: (user) => eraseAfterUserDeletion(user.id),
     },
   },
   hooks: { before: requireTwoFactorCode },

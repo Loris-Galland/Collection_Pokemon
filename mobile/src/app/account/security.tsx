@@ -29,7 +29,7 @@ export default function SecurityScreen() {
   return (
     <KeyboardScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <ProfileSection user={user} />
-      <ExportSection user={user} />
+      <ExportSection />
       <TwoFactorSection hasPassword={hasPassword} enabled={twoFactorEnabled} />
       <DeleteAccountSection userId={user.id} hasPassword={hasPassword} twoFactorEnabled={twoFactorEnabled} />
     </KeyboardScrollView>

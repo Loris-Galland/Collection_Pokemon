@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc -p ../shared/tsconfig.build.json",
     "dev": "vercel dev",
-    "typecheck": "npm run build && tsc --noEmit"
+    "typecheck": "npm run build && tsc --noEmit",
+    "test:db": "npm run build && tsc -p tsconfig.test.json && node --test \"dist/test/**/*.test.js\""
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

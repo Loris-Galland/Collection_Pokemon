@@ -16,6 +16,7 @@ export const accountLimitKeys = (userId: string) => ({
   avatarWrite: `${userId}:avatar-write`,
   collectionRead: `${userId}:collection-read`,
   collectionWrite: `${userId}:collection-write`,
+  exportRead: `${userId}:export-read`,
   twoFactorFailure: `${userId}:two-factor-failure`,
 });
 
