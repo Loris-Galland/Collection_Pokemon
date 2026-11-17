@@ -1,4 +1,4 @@
-import type { CatalogLanguage } from '@collection/shared';
+import { mapLimited, type CatalogLanguage } from '@collection/shared';
 import { useSyncExternalStore } from 'react';
 
 import { loadCards } from '@/features/catalog/hooks';
@@ -48,20 +48,6 @@ const ready = readJson<Downloaded>(DOWNLOADED_KEY, {}, restoreDownloaded)
   .catch(() => ({}))
   .then((downloaded) => update({ downloaded, size: keptCatalogSize() }));
 
-/** Runs the tasks a few at a time. A failure stops nothing, and the number of failures is returned. */
-async function runLimited(tasks: (() => Promise<void>)[], limit: number, onDone: () => void): Promise<number> {
-  const queue = [...tasks];
-  let failures = 0;
-  const worker = async () => {
-    for (let task = queue.shift(); task; task = queue.shift()) {
-      await task().catch(() => void failures++);
-      onDone();
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, queue.length) }, worker));
-  return failures;
-}
-
 /** Downloads a set, its cards with their variants and prices, and their small pictures. */
 async function downloadSet(language: CatalogLanguage, setId: string): Promise<void> {
   const { set, cards } = await fetchSet(language, setId);
@@ -80,11 +66,8 @@ async function downloadSet(language: CatalogLanguage, setId: string): Promise<vo
     progress,
   );
   if (loaded.size < cards.length) throw new Error(`${cards.length - loaded.size} cards of ${setId} could not load`);
-  const imageFailures = await runLimited(
-    pictures.map((url) => () => keepImage(url)),
-    PARALLEL_IMAGES,
-    progress,
-  );
+  const images = await mapLimited(pictures, PARALLEL_IMAGES, (url) => keepImage(url).finally(progress));
+  const imageFailures = images.filter((result) => result.status === 'rejected').length;
   if (imageFailures > 0) throw new Error(`${imageFailures} pictures of ${setId} could not load`);
 }
 

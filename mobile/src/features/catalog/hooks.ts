@@ -1,4 +1,4 @@
-import type { CatalogLanguage } from '@collection/shared';
+import { mapLimited, type CatalogLanguage } from '@collection/shared';
 import { useEffect, useState } from 'react';
 
 import { fetchCached, useQuery } from '@/lib/use-query';
@@ -27,29 +27,23 @@ export function useCard(cardId: string) {
 /** Maximum number of parallel requests to TCGdex, so a large collection does not flood it. */
 const MAX_PARALLEL_REQUESTS = 6;
 
-/** Loads each card, cache first, a few at a time. Failures are skipped. */
+/** Loads each card, cache first, a few at a time. A card not found or not reached is left out. */
 export async function loadCards(
   language: CatalogLanguage,
   cardIds: readonly string[],
   onProgress?: (doneCount: number) => void,
 ): Promise<Map<string, CardDetail>> {
-  const cards = new Map<string, CardDetail>();
-  const queue = [...cardIds];
   let doneCount = 0;
-  const worker = async () => {
-    for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
-      const cardId = id;
-      try {
-        const detail = await fetchCached(`card:${language}:${cardId}`, () => fetchCard(language, cardId));
-        cards.set(detail.card.id, detail);
-      } catch {
-        // Card not found or network failure. It is simply left out of the result.
-      }
+  const results = await mapLimited(cardIds, MAX_PARALLEL_REQUESTS, async (cardId) => {
+    try {
+      return await fetchCached(`card:${language}:${cardId}`, () => fetchCard(language, cardId));
+    } finally {
       onProgress?.(++doneCount);
     }
-  };
-  await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL_REQUESTS, queue.length) }, worker));
-  return cards;
+  });
+  return new Map(
+    results.flatMap((result) => (result.status === 'fulfilled' ? [[result.value.card.id, result.value] as const] : [])),
+  );
 }
 
 /**

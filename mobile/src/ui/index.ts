@@ -21,3 +21,4 @@ export * from './text';
 export * from './text-field';
 export * from './theme';
 export * from './toast';
+export * from './sync-notice';
