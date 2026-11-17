@@ -13,13 +13,20 @@ import { fetchCached } from '@/lib/use-query';
 /** Sets opened for one number. A total shared by more sets is rare, and the newest ones are the likely ones. */
 const MAX_SETS_PER_NUMBER = 8;
 
+export interface ScanResult {
+  /** Whether a printed number was found in the text at all. */
+  numberRead: boolean;
+  /** The cards carrying that number, the likeliest first. */
+  matches: ScanMatch[];
+}
+
 /**
  * The cards carrying a number found in the text, the likeliest first. It reads the same caches as the catalog
  * screens, so it also works offline for the sets kept on the phone.
  */
-export async function findScannedCards(language: CatalogLanguage, text: string): Promise<ScanMatch[]> {
+export async function findScannedCards(language: CatalogLanguage, text: string): Promise<ScanResult> {
   const numbers = readPrintedNumbers(text);
-  if (numbers.length === 0) return [];
+  if (numbers.length === 0) return { numberRead: false, matches: [] };
   const sets = await fetchCached(`sets:${language}`, () => fetchSets(language));
   const found = new Map<string, ScanMatch>();
   for (const number of numbers) {
@@ -34,5 +41,5 @@ export async function findScannedCards(language: CatalogLanguage, text: string):
       if (card && !found.has(card.id)) found.set(card.id, { card, set: entry.set });
     }
   }
-  return rankScanMatches([...found.values()], text);
+  return { numberRead: true, matches: rankScanMatches([...found.values()], text) };
 }

@@ -1,5 +1,5 @@
 import { mapLimited, type CatalogLanguage } from '@collection/shared';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import { loadCards } from '@/features/catalog/hooks';
 import { cardImageUrl, fetchSet, fetchSets, keepCardSearchOffline } from '@/features/catalog/tcgdex';
@@ -44,9 +44,15 @@ function update(patch: Partial<OfflineState>) {
   for (const listener of listeners) listener();
 }
 
-const ready = readJson<Downloaded>(DOWNLOADED_KEY, {}, restoreDownloaded)
-  .catch(() => ({}))
-  .then((downloaded) => update({ downloaded, size: keptCatalogSize() }));
+let restored: Promise<void> | undefined;
+
+/** Reads what was kept on the phone once, the first time a screen or a download needs it. */
+function restore(): Promise<void> {
+  restored ??= readJson<Downloaded>(DOWNLOADED_KEY, {}, restoreDownloaded)
+    .catch(() => ({}))
+    .then((downloaded) => update({ downloaded, size: keptCatalogSize() }));
+  return restored;
+}
 
 /** Downloads a set, its cards with their variants and prices, and their small pictures. */
 async function downloadSet(language: CatalogLanguage, setId: string): Promise<void> {
@@ -103,7 +109,7 @@ async function run() {
  * prices, and pictures already on the phone are skipped. It goes on while the app is open, across screens.
  */
 export async function downloadSets(language: CatalogLanguage, setIds: readonly string[]): Promise<void> {
-  await ready;
+  await restore();
   const busy = new Set(
     [state.current, ...state.waiting].flatMap((entry) => (entry ? `${entry.language}/${entry.setId}` : [])),
   );
@@ -138,5 +144,8 @@ const getState = () => state;
 
 /** What is kept for offline use and what is being downloaded. */
 export function useOfflineDownloads(): OfflineState {
+  useEffect(() => {
+    restore();
+  }, []);
   return useSyncExternalStore(subscribe, getState, getState);
 }

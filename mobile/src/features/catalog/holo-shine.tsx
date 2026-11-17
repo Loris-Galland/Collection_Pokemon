@@ -1,4 +1,4 @@
-import type { Card } from '@collection/shared';
+import { isShinyCard, type Card } from '@collection/shared';
 import type { ReactNode } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -12,11 +12,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { gradientStyle, radius } from '@/ui';
-
-/** Whether a card shines. Holo prints do, and so do rare cards. Almost every card has a reverse print, which is left out. */
-export function isShiny(card: Pick<Card, 'variants' | 'rarity'>): boolean {
-  return card.variants.includes('holo') || /holo|rare|secr|ultra|illustration|hyper|shiny/i.test(card.rarity ?? '');
-}
 
 // How far the phone is tilted, in radians, for the reflection to cross the whole card.
 const TILT = 0.6;
@@ -51,7 +46,7 @@ const RAINBOW = gradientStyle(
 /** Lays a moving reflection over the picture of a shiny card. On the web and with reduced motion it stays still. */
 export function HoloShine({ card, children }: { card: Pick<Card, 'variants' | 'rarity'>; children: ReactNode }) {
   const reduceMotion = useReducedMotion();
-  const moving = isShiny(card) && !reduceMotion && Platform.OS !== 'web';
+  const moving = isShinyCard(card) && !reduceMotion && Platform.OS !== 'web';
   return (
     <View>
       {children}

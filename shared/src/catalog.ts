@@ -2,21 +2,7 @@
 
 /** Print language of a copy. Every language TCGdex knows, so any copy can be described. */
 export type Language =
-  | 'fr'
-  | 'en'
-  | 'de'
-  | 'es'
-  | 'it'
-  | 'pt'
-  | 'nl'
-  | 'pl'
-  | 'ru'
-  | 'ja'
-  | 'ko'
-  | 'zh-tw'
-  | 'zh-cn'
-  | 'th'
-  | 'id';
+  'fr' | 'en' | 'de' | 'es' | 'it' | 'pt' | 'nl' | 'pl' | 'ru' | 'ja' | 'ko' | 'zh-tw' | 'zh-cn' | 'th' | 'id';
 
 export const LANGUAGES: readonly Language[] = [
   'fr',
@@ -159,4 +145,12 @@ export function cheapestPrice(prices: readonly Price[]): Price | undefined {
 /** Unique key of a price, used to find it in a Map. */
 export function priceKey(cardId: string, variant: Variant): string {
   return `${cardId}:${variant}`;
+}
+
+/**
+ * Whether a card shines on screen. Holo prints do, and so do rare cards, read from the rarity TCGdex gives in English
+ * or French. Almost every card has a reverse print, which is left out, otherwise the whole catalog would shine.
+ */
+export function isShinyCard(card: Pick<Card, 'variants' | 'rarity'>): boolean {
+  return card.variants.includes('holo') || /holo|rare|secr|ultra|illustration|hyper|shiny/i.test(card.rarity ?? '');
 }

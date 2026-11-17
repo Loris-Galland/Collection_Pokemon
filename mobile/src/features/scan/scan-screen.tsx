@@ -23,7 +23,7 @@ import {
   spacing,
 } from '@/ui';
 
-import { findScannedCards } from './find-scanned-cards';
+import { findScannedCards, type ScanResult } from './find-scanned-cards';
 import { CAN_READ_TEXT, readTextOnPhoto } from './text-reader';
 
 type ScanState =
@@ -41,18 +41,11 @@ function forgetPhoto(uri: string): void {
   }
 }
 
-/** Opens the card when there is only one, and lets the user choose otherwise. */
-function useShowMatches(setState: (state: ScanState) => void) {
-  return (matches: ScanMatch[], numberRead: boolean) => {
-    if (matches.length === 1) {
-      setState({ step: 'aiming' });
-      router.push({ pathname: '/card/[cardId]', params: { cardId: matches[0]!.card.id } });
-    } else if (matches.length > 1) {
-      setState({ step: 'choosing', matches });
-    } else {
-      setState({ step: 'not-found', reason: numberRead ? 'no-card' : 'no-number' });
-    }
-  };
+/** What the screen shows after a search. A single card opens at once, so the screen goes back to aiming. */
+function stateAfter({ numberRead, matches }: ScanResult): ScanState {
+  if (matches.length === 1) return { step: 'aiming' };
+  if (matches.length > 1) return { step: 'choosing', matches };
+  return { step: 'not-found', reason: numberRead ? 'no-card' : 'no-number' };
 }
 
 /**
@@ -68,7 +61,6 @@ export function ScanScreen() {
   const [focused, setFocused] = useState(false);
   const [state, setState] = useState<ScanState>({ step: 'aiming' });
   const [typed, setTyped] = useState('');
-  const showMatches = useShowMatches(setState);
 
   // Only one camera can run at a time, and it should not run behind another tab.
   useFocusEffect(
@@ -84,8 +76,12 @@ export function ScanScreen() {
   const search = async (text: string) => {
     setState({ step: 'reading' });
     try {
-      const matches = await findScannedCards(language, text);
-      showMatches(matches, /\d\s*\/\s*\w/.test(text));
+      const result = await findScannedCards(language, text);
+      setState(stateAfter(result));
+      const [only] = result.matches;
+      if (only && result.matches.length === 1) {
+        router.push({ pathname: '/card/[cardId]', params: { cardId: only.card.id } });
+      }
     } catch (error) {
       console.warn('Could not find the scanned card', error);
       setState({ step: 'not-found', reason: 'failed' });
