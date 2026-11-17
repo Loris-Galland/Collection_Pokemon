@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useRequireAccount } from '@/features/account/use-account';
 import { CardTile } from '@/features/catalog/card-tile';
@@ -14,14 +14,21 @@ import { useWishPicker } from '@/features/wishlist/wish-picker';
 import { useWishlist } from '@/features/wishlist/wishlist-provider';
 import { keptOrRemote } from '@/features/offline/catalog-files';
 import { OfflineSetButton } from '@/features/offline/offline-set-button';
+import { BinderView } from '@/features/binder/binder-view';
 import { formatPercent } from '@/lib/format';
-import { Button, ProgressBar, StateView, Text, Toast, colors, spacing, useToast } from '@/ui';
+import { usePersistentState } from '@/lib/storage';
+import { Button, ProgressBar, SegmentedControl, StateView, Text, Toast, colors, spacing, useToast } from '@/ui';
 
 const COLUMNS = 3;
+
+type SetView = 'grid' | 'binder';
+// The last view chosen is kept for every set, on this phone only.
+const restoreView = (value: unknown): SetView | undefined =>
+  value === 'grid' || value === 'binder' ? value : undefined;
 // Keeps the last cards reachable above the panel of the selection.
 const SELECTION_PANEL_ROOM = 160;
 
-/** Set screen with all of its cards, missing ones greyed out, and the progress. It will become the binder. */
+/** Set screen with all of its cards as a grid or a binder, missing ones greyed out, and the progress. */
 export default function SetScreen() {
   const { t } = useTranslation();
   const { setId } = useLocalSearchParams<{ setId: string }>();
@@ -33,6 +40,7 @@ export default function SetScreen() {
   const { toggle: toggleWish, choose: chooseWishlist } = useWishPicker();
   const { toast, showToast } = useToast();
   const [selecting, setSelecting] = useState(false);
+  const [view, setView] = usePersistentState<SetView>('set-view/v1', 'grid', restoreView);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
 
   const wishedIds = useMemo(() => new Set(wishes.map((wish) => wish.cardId)), [wishes]);
@@ -81,58 +89,77 @@ export default function SetScreen() {
   const { set, cards } = data;
   const progress = computeSetProgress(set, copies);
 
+  const header = (
+    <View style={styles.header}>
+      {set.logoUrl && <Image source={{ uri: keptOrRemote(set.logoUrl) }} style={styles.logo} contentFit="contain" />}
+      <View style={styles.progressLine}>
+        <Text variant="heading">
+          {progress.owned}/{progress.total}
+        </Text>
+        <Text variant="caption" tone="muted">
+          {formatPercent(progress.ratio)} · {t('set.secrets', { count: countSecretCards(set) })}
+        </Text>
+      </View>
+      <ProgressBar ratio={progress.ratio} />
+      {!selecting && (
+        <SegmentedControl
+          options={[
+            { value: 'grid', label: t('set.viewGrid') },
+            { value: 'binder', label: t('set.viewBinder') },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+      )}
+      {!selecting && (
+        <>
+          {view === 'grid' && (
+            <Button label={t('set.addSeveral')} variant="secondary" onPress={() => startSelecting()} />
+          )}
+          <OfflineSetButton set={set} />
+        </>
+      )}
+    </View>
+  );
+
   return (
     <>
       <Stack.Screen options={{ title: set.name }} />
-      <FlatList
-        data={cards}
-        keyExtractor={(card) => card.id}
-        numColumns={COLUMNS}
-        style={styles.screen}
-        contentContainerStyle={[styles.grid, selecting && { paddingBottom: SELECTION_PANEL_ROOM }]}
-        extraData={[selectedIds, wishedIds]}
-        initialNumToRender={4}
-        maxToRenderPerBatch={4}
-        windowSize={5}
-        columnWrapperStyle={styles.row}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            {set.logoUrl && (
-              <Image source={{ uri: keptOrRemote(set.logoUrl) }} style={styles.logo} contentFit="contain" />
-            )}
-            <View style={styles.progressLine}>
-              <Text variant="heading">
-                {progress.owned}/{progress.total}
-              </Text>
-              <Text variant="caption" tone="muted">
-                {formatPercent(progress.ratio)} · {t('set.secrets', { count: countSecretCards(set) })}
-              </Text>
+      {view === 'binder' ? (
+        <ScrollView style={styles.screen} contentContainerStyle={styles.grid}>
+          {header}
+          <BinderView cards={cards} owned={owned} />
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={cards}
+          keyExtractor={(card) => card.id}
+          numColumns={COLUMNS}
+          style={styles.screen}
+          contentContainerStyle={[styles.grid, selecting && { paddingBottom: SELECTION_PANEL_ROOM }]}
+          extraData={[selectedIds, wishedIds]}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          columnWrapperStyle={styles.row}
+          ListHeaderComponent={header}
+          renderItem={({ item }) => (
+            <View style={styles.cell}>
+              <CardTile
+                card={item}
+                ownedQuantity={owned.get(item.id) ?? 0}
+                selecting={selecting}
+                selected={selectedIds.has(item.id)}
+                onToggleSelected={toggleSelected}
+                onStartSelecting={startSelecting}
+                wished={wishedIds.has(item.id)}
+                onToggleWish={toggleWish}
+                onChooseWishlist={chooseWishlist}
+              />
             </View>
-            <ProgressBar ratio={progress.ratio} />
-            {!selecting && (
-              <>
-                <Button label={t('set.addSeveral')} variant="secondary" onPress={() => startSelecting()} />
-                <OfflineSetButton set={set} />
-              </>
-            )}
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.cell}>
-            <CardTile
-              card={item}
-              ownedQuantity={owned.get(item.id) ?? 0}
-              selecting={selecting}
-              selected={selectedIds.has(item.id)}
-              onToggleSelected={toggleSelected}
-              onStartSelecting={startSelecting}
-              wished={wishedIds.has(item.id)}
-              onToggleWish={toggleWish}
-              onChooseWishlist={chooseWishlist}
-            />
-          </View>
-        )}
-      />
+          )}
+        />
+      )}
       {selecting && (
         <BulkAddPanel
           selected={selectedCards}
