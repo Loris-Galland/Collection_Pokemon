@@ -1,13 +1,16 @@
 import { copiesOfCard, sharesShinyPrice } from '@collection/shared';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { CardImage } from '@/features/catalog/card-image';
+import { HoloShine } from '@/features/catalog/holo-shine';
 import { useCard } from '@/features/catalog/hooks';
 import { PriceTrendCard } from '@/features/catalog/price-trend-card';
 import { AddCopyForm } from '@/features/collection/add-copy-form';
+import { CardStow } from '@/features/collection/card-stow';
 import { CollectionNotice } from '@/features/collection/collection-notice';
 import { useCopies } from '@/features/collection/collection-provider';
 import { CopyRow } from '@/features/collection/copy-row';
@@ -25,6 +28,7 @@ export default function CardScreen() {
   const copies = useCopies();
   const { obtainedCardIds } = useWishlist();
   const { toast, showToast } = useToast();
+  const [stowCount, setStowCount] = useState(0);
 
   if (error) {
     return (
@@ -46,7 +50,11 @@ export default function CardScreen() {
       <Stack.Screen options={{ title: card.name }} />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <View style={styles.imageWrap}>
-          <CardImage imageUrl={card.imageUrl} quality="high" label={card.name} />
+          <CardStow stowCount={stowCount}>
+            <HoloShine card={card}>
+              <CardImage imageUrl={card.imageUrl} quality="high" label={card.name} />
+            </HoloShine>
+          </CardStow>
         </View>
 
         <View style={styles.titleBlock}>
@@ -109,9 +117,10 @@ export default function CardScreen() {
           <AddCopyForm
             key={card.id}
             card={card}
-            onAdded={(quantity) =>
-              showToast(quantity > 1 ? t('card.addedMany', { count: quantity }) : t('card.addedOne'))
-            }
+            onAdded={(quantity) => {
+              setStowCount((count) => count + 1);
+              showToast(quantity > 1 ? t('card.addedMany', { count: quantity }) : t('card.addedOne'));
+            }}
           />
         </View>
       </ScrollView>
