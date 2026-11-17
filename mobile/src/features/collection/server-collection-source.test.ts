@@ -3,14 +3,18 @@ import { MAX_ENTRIES_PER_CHANGE, type CollectionChange, type Copy } from '@colle
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { CollectionSourceError } from './collection-source.ts';
+import { isCollectionChange } from '@collection/shared';
+
 import {
-  createServerCollectionSource,
-  restoreQueuedChanges,
-  type CollectionRequest,
-  type QueuedChange,
+  restoreQueue,
+  type QueuedChange as Queued,
+  type ServerRequest as CollectionRequest,
   type Stored,
-} from './server-collection-source.ts';
+} from '../../lib/change-queue.ts';
+import { createServerCollectionSource } from './server-collection-source.ts';
+
+type QueuedChange = Queued<CollectionChange>;
+const restoreQueuedChanges = restoreQueue(isCollectionChange);
 
 const copy = (index: number): Copy => ({
   id: `copy-${String(index).padStart(4, '0')}`,
@@ -61,8 +65,8 @@ function sourceWith(
   server: ReturnType<typeof fakeServer>,
   options: { cache?: Copy[]; local?: Copy[]; outbox?: QueuedChange[] } = {},
 ) {
-  const cache = memory<readonly Copy[]>(options.cache);
-  const local = memory<readonly Copy[]>(options.local);
+  const cache = memory<Copy[]>(options.cache);
+  const local = memory<Copy[]>(options.local);
   const outbox = memory<readonly QueuedChange[]>(options.outbox);
   let nextId = 0;
   const source = createServerCollectionSource({
@@ -82,31 +86,31 @@ const raise: CollectionChange = { type: 'set-quantity', copyId: 'copy-0002', qua
 describe('loading from the server', () => {
   it('shows the collection of the server and keeps it for offline use', async () => {
     const { source, cache } = sourceWith(fakeServer([], [copy(1)]));
-    assert.deepEqual(await source.load(), { copies: [copy(1)] });
+    assert.deepEqual(await source.load(), [copy(1)]);
     await settle();
     assert.deepEqual(cache.value, [copy(1)]);
   });
 
   it('shows the last known collection when offline', async () => {
     const { source } = sourceWith(fakeServer([null]), { cache: [copy(1)] });
-    assert.deepEqual(await source.load(), { copies: [copy(1)] });
+    assert.deepEqual(await source.load(), [copy(1)]);
   });
 
   it('shows the copies saved on the phone when offline and nothing was read before', async () => {
     const { source } = sourceWith(fakeServer([null, null]), { local: [copy(2)] });
-    assert.deepEqual(await source.load(), { copies: [copy(2)] });
+    assert.deepEqual(await source.load(), [copy(2)]);
   });
 
   it('fails when offline with nothing to show', async () => {
     const { source } = sourceWith(fakeServer([null]));
-    await assert.rejects(source.load(), CollectionSourceError);
+    await assert.rejects(source.load());
   });
 
   it('adds the changes the server does not have yet to what it sends back', async () => {
     // The change cannot be sent, but the server can still be read.
     const server = fakeServer([refusal(503)], [copy(1), copy(2)]);
     const { source } = sourceWith(server, { outbox: [{ changeId: 'old', change: remove }] });
-    assert.deepEqual(await source.load(), { copies: [copy(2)] });
+    assert.deepEqual(await source.load(), [copy(2)]);
   });
 });
 
@@ -159,7 +163,7 @@ describe('saving a change', () => {
     const { source, cache, outbox } = sourceWith(server);
     await source.load();
     await source.apply(remove);
-    assert.deepEqual(await source.sync!(), { unsentCount: 0, refused: undefined });
+    assert.deepEqual(await source.sync(), { unsentCount: 0, refused: undefined });
     await settle();
     assert.deepEqual(server.sent, [{ changeId: 'change-1', change: remove }]);
     assert.deepEqual(cache.value, []);
@@ -179,8 +183,8 @@ describe('saving a change', () => {
     outbox.write = async () => {
       throw new Error('disk full');
     };
-    await assert.rejects(source.apply(remove), { reason: 'other' });
-    assert.deepEqual(await source.sync!(), { unsentCount: 0, refused: undefined });
+    await assert.rejects(source.apply(remove), /disk full/);
+    assert.deepEqual(await source.sync(), { unsentCount: 0, refused: undefined });
   });
 });
 
@@ -193,7 +197,7 @@ describe('changing the collection offline', () => {
 
     await source.apply(remove);
     await source.apply(raise);
-    assert.deepEqual(await source.sync!(), { unsentCount: 2, refused: undefined });
+    assert.deepEqual(await source.sync(), { unsentCount: 2, refused: undefined });
     await settle();
     assert.deepEqual(cache.value, [{ ...copy(2), quantity: 3 }]);
     assert.equal(outbox.value?.length, 2);
@@ -208,7 +212,7 @@ describe('changing the collection offline', () => {
     await settle();
 
     const reopened = sourceWith(server, { cache: [...first.cache.value!], outbox: [...first.outbox.value!] });
-    assert.deepEqual(await reopened.source.load(), { copies: [copy(2)] });
+    assert.deepEqual(await reopened.source.load(), [copy(2)]);
   });
 
   it('sends them in order with the same ids when the network comes back', async () => {
@@ -218,10 +222,10 @@ describe('changing the collection offline', () => {
     server.setOnline(false);
     await source.apply(remove);
     await source.apply(raise);
-    await source.sync!();
+    await source.sync();
 
     server.setOnline(true);
-    assert.deepEqual(await source.sync!(), { unsentCount: 0, refused: undefined });
+    assert.deepEqual(await source.sync(), { unsentCount: 0, refused: undefined });
     const accepted = server.sent.slice(-2);
     assert.deepEqual(accepted, [
       { changeId: 'change-1', change: remove },
@@ -236,8 +240,8 @@ describe('changing the collection offline', () => {
     await source.load();
     server.answers.push(refusal(500));
     await source.apply(remove);
-    assert.equal((await source.sync!()).unsentCount, 1);
-    assert.equal((await source.sync!()).unsentCount, 0);
+    assert.equal((await source.sync()).unsentCount, 1);
+    assert.equal((await source.sync()).unsentCount, 0);
     assert.deepEqual(
       server.sent.map((sent) => sent.changeId),
       ['change-1', 'change-1'],
@@ -265,7 +269,7 @@ describe('changing the collection offline', () => {
         ['a', 'b'],
         reason,
       );
-      assert.deepEqual(await source.sync!(), { unsentCount: 0, refused: reason }, reason);
+      assert.deepEqual(await source.sync(), { unsentCount: 0, refused: reason }, reason);
       assert.deepEqual(outbox.value, [], reason);
     }
   });
@@ -276,8 +280,8 @@ describe('changing the collection offline', () => {
     await source.load();
     server.answers.push(refusal(409, 'collection_full'));
     await source.apply(remove);
-    assert.deepEqual(await source.sync!(), { unsentCount: 0, refused: 'full' });
-    assert.deepEqual(await source.sync!(), { unsentCount: 0, refused: undefined });
+    assert.deepEqual(await source.sync(), { unsentCount: 0, refused: 'full' });
+    assert.deepEqual(await source.sync(), { unsentCount: 0, refused: undefined });
   });
 
   it('keeps the changes for later when the session has ended', async () => {
@@ -285,8 +289,8 @@ describe('changing the collection offline', () => {
     // The change is refused, the collection is read, then the change is refused again.
     const server = fakeServer([signedOut, undefined as never, signedOut.clone()], [copy(1)]);
     const { source, outbox } = sourceWith(server, { outbox: [{ changeId: 'a', change: remove }] });
-    assert.deepEqual(await source.load(), { copies: [] });
-    assert.deepEqual(await source.sync!(), { unsentCount: 1, refused: 'signed-out' });
+    assert.deepEqual(await source.load(), []);
+    assert.deepEqual(await source.sync(), { unsentCount: 1, refused: 'signed-out' });
     assert.equal(outbox.value?.length, 1);
   });
 });

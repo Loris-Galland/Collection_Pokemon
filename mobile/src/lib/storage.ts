@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
+import type { Stored } from './change-queue';
+
 /**
  * Turns a stored value back into usable data, keeping whatever is still valid. Returns undefined when nothing can be
  * recovered.
@@ -83,4 +85,13 @@ export function usePersistentState<T>(
 
   const loaded = stored?.key === key;
   return [loaded ? stored.value : fallback, setValue, loaded];
+}
+
+/** A value saved on the phone as JSON under one key, read back through `restore`. */
+export function storedJson<T>(key: string, restore: Restore<T>): Stored<T> {
+  return {
+    read: () => readJson<T | undefined>(key, undefined, restore),
+    write: (value) => writeJson(key, value),
+    remove: () => removeJson([key]),
+  };
 }

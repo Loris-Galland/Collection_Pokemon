@@ -39,7 +39,7 @@ describe('wishes on the server', { skip: skipWithoutDatabase }, () => {
     await wishes.saveWishlistChange(userId, 'c1', { type: 'create-list', wishlist: list('a') });
     await wishes.saveWishlistChange(userId, 'c2', { type: 'add-wish', wish: wish('sv01-1') });
     await wishes.saveWishlistChange(userId, 'c2', { type: 'add-wish', wish: wish('sv01-1') });
-    await wishes.saveWishlistChange(userId, 'c3', { type: 'remove-wish', cardId: 'sv01-1' });
+    await wishes.saveWishlistChange(userId, 'c3', { type: 'remove-wishes', cardIds: ['sv01-1'] });
     // Sent again after the removal, it must not bring the wish back.
     await wishes.saveWishlistChange(userId, 'c2', { type: 'add-wish', wish: wish('sv01-1') });
     const saved = await wishes.readWishes(userId);

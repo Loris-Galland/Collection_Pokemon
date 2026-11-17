@@ -1,49 +1,20 @@
-import { applyCollectionChange, isCopy, type Copy } from '@collection/shared';
+import { applyCollectionChange, isCollectionChange, isCopy, type Copy } from '@collection/shared';
 
-import { readJson, removeJson, writeJson } from '@/lib/storage';
+import { restoreQueue } from '@/lib/change-queue';
+import { storedJson } from '@/lib/storage';
+import { createLocalSource } from '@/lib/synced-source';
 
 import type { CollectionSource } from './collection-source';
-import {
-  restoreQueuedChanges,
-  type QueuedChange,
-  type StoredChanges,
-  type StoredCopies,
-} from './server-collection-source';
 
 // Keeps the valid copies only, so one corrupted entry does not cost the whole collection.
-export const restoreCopies = (value: unknown): Copy[] | undefined =>
-  Array.isArray(value) ? value.filter(isCopy) : undefined;
+const restoreCopies = (value: unknown): Copy[] | undefined => (Array.isArray(value) ? value.filter(isCopy) : undefined);
+
+/** Copies saved on the phone under one key. */
+export const storedCopies = (key: string) => storedJson(key, restoreCopies);
+
+/** The collection changes waiting for the server, saved on the phone under one key. */
+export const storedCollectionChanges = (key: string) => storedJson(key, restoreQueue(isCollectionChange));
 
 /** The collection of a visitor, which lives on the phone only. */
-export function createLocalCollectionSource(storageKey: string): CollectionSource {
-  let stored: Copy[] = [];
-  return {
-    async load() {
-      stored = await readJson<Copy[]>(storageKey, [], restoreCopies);
-      return { copies: stored };
-    },
-    async apply(change) {
-      const next = applyCollectionChange(stored, change);
-      await writeJson(storageKey, next);
-      stored = next;
-    },
-  };
-}
-
-/** Copies saved on the phone under one key, for the server source. */
-export function storedCopies(storageKey: string): StoredCopies {
-  return {
-    read: () => readJson<Copy[] | undefined>(storageKey, undefined, restoreCopies),
-    write: (copies) => writeJson(storageKey, copies),
-    remove: () => removeJson([storageKey]),
-  };
-}
-
-/** The changes waiting for the server, saved on the phone under one key. */
-export function storedChanges(storageKey: string): StoredChanges {
-  return {
-    read: () => readJson<readonly QueuedChange[] | undefined>(storageKey, undefined, restoreQueuedChanges),
-    write: (changes) => writeJson(storageKey, changes),
-    remove: () => removeJson([storageKey]),
-  };
-}
+export const createLocalCollectionSource = (key: string): CollectionSource =>
+  createLocalSource(storedCopies(key), [], applyCollectionChange);

@@ -13,14 +13,28 @@ export interface QueuedChange<C> {
   change: C;
 }
 
+/** Keeps the valid queued changes only, so one corrupted entry does not cost the others. */
+export function restoreQueue<C>(isChange: (value: unknown) => value is C) {
+  return (value: unknown): QueuedChange<C>[] | undefined =>
+    Array.isArray(value)
+      ? value.filter(
+          (entry): entry is QueuedChange<C> =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            typeof entry.changeId === 'string' &&
+            isChange((entry as { change: unknown }).change),
+        )
+      : undefined;
+}
+
 /** Sends one request to a route of the server. Rejects when the server cannot be reached. */
 export type ServerRequest = (request: { method: 'GET' } | { method: 'POST'; body: unknown }) => Promise<Response>;
 
 /** What became of a change sent once. `unreachable` covers no network and a failing server. */
 export type SendResult<R extends string> = 'sent' | 'unreachable' | 'signed-out' | R;
 
-export interface ChangeQueueOptions<R extends string> {
-  outbox: Stored<readonly QueuedChange<unknown>[]>;
+export interface ChangeQueueOptions<C, R extends string> {
+  outbox: Stored<readonly QueuedChange<C>[]>;
   request: ServerRequest;
   /** Why the server refused a change, read from its answer. 401 is handled here and never reaches it. */
   refusalOf: (response: Response) => Promise<R>;
@@ -28,7 +42,7 @@ export interface ChangeQueueOptions<R extends string> {
    * Runs before the queue is sent, for instance to send data saved on the phone before. The queue waits when it
    * returns false.
    */
-  before?: (send: (entry: QueuedChange<unknown>) => Promise<SendResult<R>>) => Promise<boolean>;
+  before?: (send: (entry: QueuedChange<C>) => Promise<SendResult<R>>) => Promise<boolean>;
 }
 
 export interface ChangeQueue<C, R extends string> {
@@ -40,8 +54,10 @@ export interface ChangeQueue<C, R extends string> {
   add(entry: QueuedChange<C>): Promise<void>;
   /** Sends the changes in order and stops at the first one the server cannot take yet. */
   drain(): Promise<void>;
-  /** Why the server refused a change since the last call, if it did. */
+  /** Why the server refused a change since the last call, if it did. Each refusal is given once. */
   takeRefusal(): R | 'signed-out' | undefined;
+  /** Notes a refusal met outside the queue, so it is given with the others. */
+  noteRefusal(reason: R | 'signed-out'): void;
 }
 
 const warn = (what: string) => (error: unknown) => console.warn(`Could not ${what}`, error);
@@ -50,7 +66,7 @@ const warn = (what: string) => (error: unknown) => console.warn(`Could not ${wha
  * Keeps changes on the phone and sends them in order. A refused change is dropped and its reason kept for the caller.
  * When the session has ended the changes wait, for the account to sign in again on this phone.
  */
-export function createChangeQueue<C, R extends string>(options: ChangeQueueOptions<R>): ChangeQueue<C, R> {
+export function createChangeQueue<C, R extends string>(options: ChangeQueueOptions<C, R>): ChangeQueue<C, R> {
   const { outbox, request, refusalOf, before } = options;
   let queued: QueuedChange<C>[] = [];
   let refused: R | 'signed-out' | undefined;
@@ -64,7 +80,7 @@ export function createChangeQueue<C, R extends string>(options: ChangeQueueOptio
     return write;
   }
 
-  async function send({ changeId, change }: QueuedChange<unknown>): Promise<SendResult<R>> {
+  async function send({ changeId, change }: QueuedChange<C>): Promise<SendResult<R>> {
     let response: Response;
     try {
       response = await request({ method: 'POST', body: { changeId, change } });
@@ -95,7 +111,7 @@ export function createChangeQueue<C, R extends string>(options: ChangeQueueOptio
 
   return {
     async load() {
-      queued = [...(((await outbox.read()) as QueuedChange<C>[] | undefined) ?? [])];
+      queued = [...((await outbox.read()) ?? [])];
       return queued;
     },
     entries: () => queued,
@@ -121,6 +137,9 @@ export function createChangeQueue<C, R extends string>(options: ChangeQueueOptio
       const reason = refused;
       refused = undefined;
       return reason;
+    },
+    noteRefusal(reason) {
+      refused = reason;
     },
   };
 }

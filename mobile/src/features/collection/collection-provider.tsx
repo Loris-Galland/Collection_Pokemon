@@ -1,24 +1,18 @@
 import { countOwnedQuantities, type Copy } from '@collection/shared';
-import * as Network from 'expo-network';
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppState } from 'react-native';
 
 import { adoptLegacyData, collectionCacheKey, collectionKey, collectionOutboxKey } from '@/features/account/local-data';
 import { useAccount } from '@/features/account/use-account';
 import { createId } from '@/lib/id';
+import type { SyncedState, SyncedStatus } from '@/lib/synced-store';
+import { useRefreshOnReconnect } from '@/lib/use-refresh-on-reconnect';
 import { StateView } from '@/ui';
 
 import { requestCollection } from './collection-api';
 import type { CollectionSource, SaveFailure } from './collection-source';
-import {
-  createCollectionStore,
-  type CollectionActions,
-  type CollectionState,
-  type CollectionStatus,
-  type CollectionStore,
-} from './collection-store';
-import { createLocalCollectionSource, storedChanges, storedCopies } from './local-collection-source';
+import { createCollectionStore, type CollectionActions, type CollectionStore } from './collection-store';
+import { createLocalCollectionSource, storedCollectionChanges, storedCopies } from './local-collection-source';
 import { createServerCollectionSource } from './server-collection-source';
 
 interface OwnedStore {
@@ -40,7 +34,7 @@ function useStore(): CollectionStore {
 }
 
 /** Redraws the component only when the selected part of the state changes. */
-function useSelected<T>(store: CollectionStore, select: (state: CollectionState) => T): T {
+function useSelected<T>(store: CollectionStore, select: (state: SyncedState<Copy[], SaveFailure>) => T): T {
   const read = () => select(store.getState());
   return useSyncExternalStore(store.subscribe, read, read);
 }
@@ -52,33 +46,9 @@ function sourceFor(ownerId: string | undefined): CollectionSource {
     request: requestCollection,
     cache: storedCopies(collectionCacheKey(ownerId)),
     local: storedCopies(collectionKey(ownerId)),
-    outbox: storedChanges(collectionOutboxKey(ownerId)),
+    outbox: storedCollectionChanges(collectionOutboxKey(ownerId)),
     newChangeId: createId,
   });
-}
-
-/**
- * Sends the changes made offline when the network comes back or the app returns to the screen. Coming back also reads
- * the collection again, since it may have changed on another phone.
- */
-function useReconnect(store: CollectionStore | undefined): void {
-  useEffect(() => {
-    if (!store) return;
-    const retry = () => {
-      if (store.getState().unsentCount > 0) store.sync();
-      else store.load();
-    };
-    const network = Network.addNetworkStateListener((state) => {
-      if (state.isInternetReachable) retry();
-    });
-    const appState = AppState.addEventListener('change', (next) => {
-      if (next === 'active') retry();
-    });
-    return () => {
-      network.remove();
-      appState.remove();
-    };
-  }, [store]);
 }
 
 /**
@@ -103,7 +73,7 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
     };
   }, [ownerId]);
 
-  useReconnect(owned?.store);
+  useRefreshOnReconnect(owned?.store);
 
   // Only on the very first load. Later the current collection stays on screen until the next one is ready.
   if (!owned) return <StateView loading />;
@@ -137,16 +107,16 @@ export function useCollectionOwner(): string | undefined {
 
 /** The copies in the collection, as shown on screen. */
 export function useCopies(): readonly Copy[] {
-  return useSelected(useStore(), (state) => state.copies);
+  return useSelected(useStore(), (state) => state.value);
 }
 
 /** The copies the source has confirmed. A rule that must not act on a change that may be undone reads these. */
 export function useSavedCopies(): readonly Copy[] {
-  return useSelected(useStore(), (state) => state.savedCopies);
+  return useSelected(useStore(), (state) => state.saved);
 }
 
 /** Whether the collection is loaded. */
-export function useCollectionStatus(): CollectionStatus {
+export function useCollectionStatus(): SyncedStatus {
   return useSelected(useStore(), (state) => state.status);
 }
 

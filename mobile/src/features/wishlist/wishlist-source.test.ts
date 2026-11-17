@@ -1,10 +1,18 @@
 /// <reference types="node" />
-import { MAX_WISHES_PER_IMPORT, type Wish, type WishlistChange, type Wishes } from '@collection/shared';
+import {
+  MAX_WISHES_PER_IMPORT,
+  NO_WISHES,
+  applyWishlistChange,
+  type Wish,
+  type WishlistChange,
+  type Wishes,
+} from '@collection/shared';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { QueuedChange, ServerRequest, Stored } from '../../lib/change-queue.ts';
-import { createLocalWishlistSource, createServerWishlistSource } from './wishlist-source.ts';
+import { createLocalSource } from '../../lib/synced-source.ts';
+import { createServerWishlistSource } from './wishlist-source.ts';
 
 const list = { id: 'list-a', name: 'Feu', createdAt: '2026-11-17T10:00:00.000Z' };
 const wish = (index: number): Wish => ({
@@ -59,7 +67,7 @@ const addWish: WishlistChange = { type: 'add-wish', wish: wish(1) };
 describe('wishes of a visitor', () => {
   it('keeps each change on the phone', async () => {
     const stored = memory<Wishes>();
-    const source = createLocalWishlistSource(stored);
+    const source = createLocalSource(stored, NO_WISHES, applyWishlistChange);
     await source.load();
     await source.apply({ type: 'create-list', wishlist: list });
     await source.apply(addWish);

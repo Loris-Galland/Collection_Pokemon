@@ -29,7 +29,7 @@ describe('applyWishlistChange', () => {
   it('adds and removes a wish', () => {
     const added = applyWishlistChange(start, { type: 'add-wish', wish: wish('sv01-2', 'b') });
     assert.equal(added.wishes.length, 2);
-    assert.equal(applyWishlistChange(added, { type: 'remove-wish', cardId: 'sv01-1' }).wishes.length, 1);
+    assert.equal(applyWishlistChange(added, { type: 'remove-wishes', cardIds: ['sv01-1'] }).wishes.length, 1);
   });
 
   it('imports lists and wishes without moving a card already wished', () => {

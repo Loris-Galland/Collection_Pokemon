@@ -3,12 +3,9 @@ import type { CollectionChange, Copy, CopyInput } from '@collection/shared';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import {
-  CollectionSourceError,
-  type CollectionSource,
-  type LoadedCollection,
-  type SyncReport,
-} from './collection-source.ts';
+import type { SyncReport } from '../../lib/synced-source.ts';
+import { createSyncedStore } from '../../lib/synced-store.ts';
+import type { CollectionSource, SaveFailure } from './collection-source.ts';
 import { createCollectionStore } from './collection-store.ts';
 
 const input: CopyInput = {
@@ -22,7 +19,7 @@ const input: CopyInput = {
 const saved: Copy = { ...input, id: 'saved', cardId: 'sv03.5-007' };
 
 /** A source whose answers are given by hand, to control what happens while a change is being saved. */
-function fakeSource(loaded: LoadedCollection = { copies: [saved] }) {
+function fakeSource(loaded: Copy[] = [saved]) {
   const received: CollectionChange[] = [];
   const answers: { resolve: () => void; reject: (error: Error) => void }[] = [];
   const source: CollectionSource = {
@@ -32,13 +29,14 @@ function fakeSource(loaded: LoadedCollection = { copies: [saved] }) {
         received.push(change);
         answers.push({ resolve, reject });
       }),
+    sync: async () => ({ unsentCount: 0 }),
   };
   return { source, received, answers };
 }
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
-async function loadedStore(loaded?: LoadedCollection) {
+async function loadedStore(loaded?: Copy[]) {
   const fake = fakeSource(loaded);
   let nextId = 0;
   const store = createCollectionStore(fake.source, () => `new-${++nextId}`);
@@ -52,24 +50,24 @@ describe('collection store', () => {
   it('shows a change at once and confirms it when the source answers', async () => {
     const { store, answers } = await loadedStore();
     store.add(input);
-    assert.deepEqual(ids(store.getState().copies), ['saved', 'new-1']);
-    assert.deepEqual(ids(store.getState().savedCopies), ['saved']);
+    assert.deepEqual(ids(store.getState().value), ['saved', 'new-1']);
+    assert.deepEqual(ids(store.getState().saved), ['saved']);
 
     await settle();
     answers[0]?.resolve();
     await settle();
-    assert.deepEqual(ids(store.getState().savedCopies), ['saved', 'new-1']);
+    assert.deepEqual(ids(store.getState().saved), ['saved', 'new-1']);
     assert.equal(store.getState().saveError, undefined);
   });
 
   it('keeps the same list reference when a change is confirmed, so screens are not redrawn', async () => {
     const { store, answers } = await loadedStore();
     store.add(input);
-    const shown = store.getState().copies;
+    const shown = store.getState().value;
     await settle();
     answers[0]?.resolve();
     await settle();
-    assert.equal(store.getState().copies, shown);
+    assert.equal(store.getState().value, shown);
   });
 
   it('sends changes one at a time and in order', async () => {
@@ -93,12 +91,12 @@ describe('collection store', () => {
     answers[0]?.reject(new Error('refused'));
     await settle();
     assert.equal(store.getState().saveError, 'other');
-    assert.deepEqual(ids(store.getState().copies), ['saved']);
-    assert.equal(store.getState().copies[0]?.quantity, 5);
+    assert.deepEqual(ids(store.getState().value), ['saved']);
+    assert.equal(store.getState().value[0]?.quantity, 5);
 
     answers[1]?.resolve();
     await settle();
-    assert.equal(store.getState().savedCopies[0]?.quantity, 5);
+    assert.equal(store.getState().saved[0]?.quantity, 5);
   });
 
   it('clears the save error on request and on the next change', async () => {
@@ -107,7 +105,7 @@ describe('collection store', () => {
     await settle();
     answers[0]?.reject(new Error('refused'));
     await settle();
-    assert.deepEqual(ids(store.getState().copies), ['saved']);
+    assert.deepEqual(ids(store.getState().value), ['saved']);
 
     store.dismissSaveError();
     assert.equal(store.getState().saveError, undefined);
@@ -128,9 +126,10 @@ describe('collection store', () => {
       load: async () => {
         attempts += 1;
         if (attempts === 1) throw new Error('offline');
-        return { copies: [saved] };
+        return [saved];
       },
       apply: async () => {},
+      sync: async () => ({ unsentCount: 0 }),
     };
     const store = createCollectionStore(source, () => 'id');
 
@@ -139,7 +138,7 @@ describe('collection store', () => {
 
     await store.load();
     assert.equal(store.getState().status, 'ready');
-    assert.deepEqual(ids(store.getState().copies), ['saved']);
+    assert.deepEqual(ids(store.getState().value), ['saved']);
   });
 
   it('loads only once when asked twice at the same time', async () => {
@@ -147,9 +146,10 @@ describe('collection store', () => {
     const source: CollectionSource = {
       load: async () => {
         attempts += 1;
-        return { copies: [] };
+        return [];
       },
       apply: async () => {},
+      sync: async () => ({ unsentCount: 0 }),
     };
     const store = createCollectionStore(source, () => 'id');
     await Promise.all([store.load(), store.load()]);
@@ -162,7 +162,11 @@ describe('adding several copies', () => {
     const applied: CollectionChange[] = [];
     let id = 0;
     const store = createCollectionStore(
-      { load: async () => ({ copies: [] }), apply: async (change) => void applied.push(change) },
+      {
+        load: async () => [],
+        apply: async (change) => void applied.push(change),
+        sync: async () => ({ unsentCount: 0 }),
+      },
       () => `id-${++id}`,
     );
     await store.load();
@@ -171,20 +175,21 @@ describe('adding several copies', () => {
 
     store.addMany([input, { ...input, cardId: 'sv03.5-007' }, { ...input, cardId: 'sv03.5-008' }]);
 
-    assert.equal(store.getState().copies.length, 3);
+    assert.equal(store.getState().value.length, 3);
     assert.equal(redraws, 1, 'the screen redraws once for the whole selection');
     await new Promise((resolve) => setTimeout(resolve));
     assert.equal(applied.length, 1, 'the source writes once');
-    assert.equal(store.getState().savedCopies.length, 3);
+    assert.equal(store.getState().saved.length, 3);
   });
 
   it('undoes the whole selection when it cannot be saved', async () => {
     const store = createCollectionStore(
       {
-        load: async () => ({ copies: [] }),
+        load: async () => [],
         apply: async () => {
           throw new Error('refused');
         },
+        sync: async () => ({ unsentCount: 0 }),
       },
       () => 'id',
     );
@@ -193,17 +198,17 @@ describe('adding several copies', () => {
     store.addMany([input, { ...input, cardId: 'sv03.5-007' }]);
     await new Promise((resolve) => setTimeout(resolve));
 
-    assert.equal(store.getState().copies.length, 0);
+    assert.equal(store.getState().value.length, 0);
     assert.equal(store.getState().saveError, 'other');
   });
 });
 
 describe('changes waiting for the server', () => {
   /** A source that keeps every change, and whose sync reports are given by the test. */
-  function queueingSource(reports: SyncReport[]) {
+  function queueingSource(reports: SyncReport<SaveFailure>[]) {
     let loads = 0;
     const source: CollectionSource = {
-      load: async () => (loads++, { copies: [saved] }),
+      load: async () => (loads++, [saved]),
       apply: async () => {},
       sync: async () => reports.shift() ?? { unsentCount: 0 },
     };
@@ -219,7 +224,7 @@ describe('changes waiting for the server', () => {
     await settle();
     assert.equal(store.getState().unsentCount, 1);
     assert.equal(store.getState().saveError, undefined);
-    assert.deepEqual(ids(store.getState().copies), ['saved', 'new'], 'the change stays on screen');
+    assert.deepEqual(ids(store.getState().value), ['saved', 'new'], 'the change stays on screen');
 
     await store.sync();
     assert.equal(store.getState().unsentCount, 0);
@@ -233,7 +238,7 @@ describe('changes waiting for the server', () => {
     await settle();
     assert.equal(store.getState().saveError, 'full');
     assert.equal(fake.loads(), 2);
-    assert.deepEqual(ids(store.getState().copies), ['saved']);
+    assert.deepEqual(ids(store.getState().value), ['saved']);
   });
 
   it('keeps the changes on screen when the session has ended', async () => {
@@ -244,16 +249,16 @@ describe('changes waiting for the server', () => {
     await settle();
     assert.equal(store.getState().saveError, 'signed-out');
     assert.equal(fake.loads(), 1);
-    assert.deepEqual(ids(store.getState().copies), ['saved', 'new']);
+    assert.deepEqual(ids(store.getState().value), ['saved', 'new']);
   });
 
   it('stays ready when a change cannot be kept', async () => {
     const { store, answers } = await loadedStore();
     store.add(input);
     await settle();
-    answers[0]?.reject(new CollectionSourceError('full'));
+    answers[0]?.reject(new Error('disk full'));
     await settle();
-    assert.equal(store.getState().saveError, 'full');
+    assert.equal(store.getState().saveError, 'other');
     assert.equal(store.getState().status, 'ready');
   });
 
@@ -263,9 +268,10 @@ describe('changes waiting for the server', () => {
       load: async () => {
         attempts += 1;
         if (attempts > 1) throw new Error('offline');
-        return { copies: [saved] };
+        return [saved];
       },
       apply: async () => {},
+      sync: async () => ({ unsentCount: 0 }),
     };
     const store = createCollectionStore(source, () => 'id');
     await store.load();
@@ -274,18 +280,33 @@ describe('changes waiting for the server', () => {
     await store.load();
     assert.equal(store.getState().status, 'ready');
     assert.deepEqual(statuses, [], 'the collection on screen does not flash a loader');
-    assert.deepEqual(ids(store.getState().copies), ['saved']);
+    assert.deepEqual(ids(store.getState().value), ['saved']);
   });
 
   it('does not load again while changes are being saved', async () => {
     let loads = 0;
     const fake = fakeSource();
-    const source: CollectionSource = { ...fake.source, load: async () => (loads++, { copies: [saved] }) };
+    const source: CollectionSource = { ...fake.source, load: async () => (loads++, [saved]) };
     const store = createCollectionStore(source, () => 'new');
     await store.load();
     store.add(input);
     await store.load();
     assert.equal(loads, 1);
-    assert.deepEqual(ids(store.getState().copies), ['saved', 'new']);
+    assert.deepEqual(ids(store.getState().value), ['saved', 'new']);
+  });
+});
+
+describe('limits', () => {
+  it('refuses a change past a limit before showing it', async () => {
+    const store = createSyncedStore<number[], number, 'too-many'>({
+      source: { load: async () => [1, 2], apply: async () => {}, sync: async () => ({ unsentCount: 0 }) },
+      empty: [],
+      applyChange: (state, change) => [...state, change],
+      check: (state) => (state.length >= 2 ? 'too-many' : undefined),
+    });
+    await store.load();
+    assert.equal(store.change(3), false);
+    assert.deepEqual(store.getState().value, [1, 2]);
+    assert.equal(store.getState().saveError, 'too-many');
   });
 });

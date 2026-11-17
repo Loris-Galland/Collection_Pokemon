@@ -17,7 +17,7 @@ import {
 export const MAX_WISHES_PER_ACCOUNT = 2000;
 /** Most wishlists one account can hold. */
 export const MAX_WISHLISTS_PER_ACCOUNT = 50;
-/** Most wishes in one import, so a request stays small. */
+/** Most wishes in one import or one removal, so a request stays small. */
 export const MAX_WISHES_PER_IMPORT = 500;
 
 /**
@@ -29,7 +29,8 @@ export type WishlistChange =
   | { type: 'rename-list'; wishlistId: string; name: string }
   | { type: 'remove-list'; wishlistId: string }
   | { type: 'add-wish'; wish: Wish }
-  | { type: 'remove-wish'; cardId: string }
+  /** Removes the wishes for these cards, one card or the cards just added to the collection. */
+  | { type: 'remove-wishes'; cardIds: string[] }
   | { type: 'import'; wishlists: Wishlist[]; wishes: Wish[] };
 
 /** Applies a change the way the server does, so the phone shows the same result before the server answers. */
@@ -43,8 +44,8 @@ export function applyWishlistChange(state: Wishes, change: WishlistChange): Wish
       return removeWishlist(state, change.wishlistId);
     case 'add-wish':
       return addWish(state, change.wish);
-    case 'remove-wish':
-      return removeWish(state, change.cardId);
+    case 'remove-wishes':
+      return change.cardIds.reduce(removeWish, state);
     case 'import': {
       const withLists = change.wishlists.reduce(addWishlist, state);
       const wished = new Set(withLists.wishes.map((wish) => wish.cardId));
@@ -104,8 +105,13 @@ export function isWishlistChange(value: unknown): value is WishlistChange {
       return isPhoneId(value.wishlistId);
     case 'add-wish':
       return isValidWish(value.wish);
-    case 'remove-wish':
-      return isCatalogId(value.cardId);
+    case 'remove-wishes':
+      return (
+        Array.isArray(value.cardIds) &&
+        value.cardIds.length > 0 &&
+        value.cardIds.length <= MAX_WISHES_PER_IMPORT &&
+        value.cardIds.every(isCatalogId)
+      );
     case 'import':
       return (
         Array.isArray(value.wishlists) &&

@@ -97,8 +97,8 @@ async function apply(userId: string, change: WishlistChange, session: ClientSess
       return 'saved';
     case 'add-wish':
       return putWish(userId, change.wish, session, false);
-    case 'remove-wish':
-      await wishes().deleteOne({ userId, cardId: change.cardId }, { session });
+    case 'remove-wishes':
+      await wishes().deleteMany({ userId, cardId: { $in: change.cardIds } }, { session });
       return 'saved';
   }
 }
