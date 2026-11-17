@@ -18,7 +18,7 @@ export const API_URL = apiUrl();
 /** Accounts live on our server. The session is kept in the encrypted storage of the phone. */
 export const authClient = createAuthClient({
   baseURL: API_URL,
-  plugins: [expoClient({ scheme: 'holo', storage: SecureStore }), twoFactorClient()],
+  plugins: [expoClient({ scheme: 'holocollection', storage: SecureStore }), twoFactorClient()],
 });
 
 /** Options for an action the server only accepts with a code from the authenticator app. */

@@ -5,11 +5,12 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "holo",
+    "scheme": "holocollection",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0B0B10",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "io.github.lorisgalland.holo"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +19,9 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "io.github.lorisgalland.holo",
+      "allowBackup": false
     },
     "web": {
       "output": "single",

@@ -5,7 +5,10 @@ import type { Translation } from '@/i18n/fr';
 export const MIN_PASSWORD_LENGTH = 8;
 
 /** Server error codes the app explains in its own words. */
-type KnownCode = Exclude<keyof Translation['authErrors'], 'tooManyAttempts' | 'noServer' | 'unknown' | 'googleNotCompleted'>;
+type KnownCode = Exclude<
+  keyof Translation['authErrors'],
+  'tooManyAttempts' | 'noServer' | 'unknown' | 'googleNotCompleted'
+>;
 
 const KNOWN_CODES = new Set<string>([
   'INVALID_EMAIL_OR_PASSWORD',
@@ -22,6 +25,7 @@ const KNOWN_CODES = new Set<string>([
   'SESSION_EXPIRED',
   'SESSION_NOT_FRESH',
   'PROVIDER_NOT_FOUND',
+  'SIGN_UPS_CLOSED',
 ] satisfies KnownCode[]);
 
 export interface AuthError {

@@ -359,6 +359,7 @@ export const en: Translation = {
     removePhoto: 'Remove',
   },
   authErrors: {
+    SIGN_UPS_CLOSED: 'Sign ups are closed for now. Existing accounts still work.',
     INVALID_EMAIL_OR_PASSWORD: 'Wrong email or password.',
     INVALID_PASSWORD: 'Wrong password.',
     INVALID_EMAIL: 'This email address is not valid.',

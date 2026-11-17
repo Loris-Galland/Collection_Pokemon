@@ -362,6 +362,7 @@ export const fr = {
     removePhoto: 'Retirer',
   },
   authErrors: {
+    SIGN_UPS_CLOSED: 'Les inscriptions sont fermées pour le moment. Les comptes existants marchent toujours.',
     INVALID_EMAIL_OR_PASSWORD: 'E-mail ou mot de passe incorrect.',
     INVALID_PASSWORD: 'Mot de passe incorrect.',
     INVALID_EMAIL: 'Cette adresse e-mail n’est pas valide.',

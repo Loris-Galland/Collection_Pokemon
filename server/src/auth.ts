@@ -1,6 +1,7 @@
 import { expo } from '@better-auth/expo';
 import { mongodbAdapter } from '@better-auth/mongo-adapter';
 import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
 import { twoFactor } from 'better-auth/plugins';
 
 import { eraseBeforeUserDeletion, eraseAfterUserDeletion } from './account-data.js';
@@ -9,6 +10,12 @@ import { requireTwoFactorCode } from './two-factor-guard.js';
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+/**
+ * Most accounts the server opens. The free database holds 512 MB, and accounts made in bulk could fill it, so past this
+ * number sign ups are closed until the limit is raised on purpose.
+ */
+const MAX_ACCOUNTS = 500;
 
 // Expo Go on a local network address, the only extra origin a deployed server accepts.
 const EXPO_GO_ORIGIN = /^exp:\/\/(192\.168|10)\.[\d.]+:\d+(\/\*\*)?$/;
@@ -22,7 +29,7 @@ function extraOrigins(): string[] {
 export const auth = betterAuth({
   appName: 'Holo',
   database: mongodbAdapter(db, { client: mongoClient }),
-  trustedOrigins: ['holo://', ...extraOrigins()],
+  trustedOrigins: ['holocollection://', ...extraOrigins()],
   emailAndPassword: { enabled: true },
   socialProviders:
     googleClientId && googleClientSecret
@@ -38,6 +45,17 @@ export const auth = betterAuth({
       enabled: true,
       beforeDelete: (user) => eraseBeforeUserDeletion(user.id),
       afterDelete: (user) => eraseAfterUserDeletion(user.id),
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async () => {
+          if ((await db.collection('user').estimatedDocumentCount()) >= MAX_ACCOUNTS) {
+            throw new APIError('FORBIDDEN', { code: 'SIGN_UPS_CLOSED', message: 'Sign ups are closed for now' });
+          }
+        },
+      },
     },
   },
   hooks: { before: requireTwoFactorCode },
