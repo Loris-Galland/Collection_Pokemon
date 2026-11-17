@@ -159,6 +159,9 @@ export const en: Translation = {
     value: 'Collection value',
     valueChange: '{{change}} over 24 h (estimate)',
     valueNotice: 'Average Cardmarket prices, indicative only. They are not real sale prices.',
+    valueSinceYesterday: '{{change}} since yesterday',
+    valueHistoryNotice:
+      ' The curve shows the value recorded each night, copies added or removed included, then today’s value.',
     valueTrendNotice:
       ' The curve and the change estimate the value of the copies you own today. The change compares the last day average with the last 7 days average.',
     unpricedCopies_one: ' {{count}} copy with no price, counted as €0.',
@@ -379,6 +382,8 @@ export const en: Translation = {
       'Your profile picture, if you add one. A reduced version without its metadata, kept on our server and visible only to you.',
     dataScan:
       'Scan photos are read on your phone to find the number of the card, then forgotten. They are never sent or kept.',
+    dataValue:
+      'The value of your collection, recorded each night from the average Cardmarket prices, to draw its curve.',
     dataSecurity: 'Your security. The secret and the backup codes of two-step verification, encrypted.',
     dataSessions:
       'Your sign ins. The IP address of each session and the description of the device and app sent by your phone, along with the IP address of sign in attempts.',
@@ -395,6 +400,7 @@ export const en: Translation = {
     howLongPhoto: 'Your profile picture. Until you remove it or delete your account.',
     howLongCollection:
       'Your collection and wishes. Until you remove them or delete your account. Each change also leaves a trace with no content for 30 days, so that it is never saved twice.',
+    howLongValue: 'Value records. 400 days, then they are erased. They all go if you delete your account.',
     howLongSessions: 'Your sessions. They expire after 7 days without use, then are erased.',
     howLongAttempts: 'Sign in attempts and request counters. 48 hours at most.',
     whoTitle: 'Who can access it',

@@ -1,4 +1,11 @@
-import { recentValueChange, type CollectionValue, type ValueTrend } from '@collection/shared';
+import {
+  dailyValueChange,
+  recentValueChange,
+  withTodayValue,
+  type CollectionValue,
+  type DailyValue,
+  type ValueTrend,
+} from '@collection/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -11,26 +18,41 @@ interface CollectionValueCardProps {
   /** Undefined when no copy has a known average. */
   valueTrend: ValueTrend | undefined;
   loading: boolean;
+  /** Snapshots recorded each night by the server, oldest first. Empty for a visitor. */
+  history: readonly DailyValue[];
 }
 
-/** Small curve of the value trend, then the collection value and its recent change. */
-export function CollectionValueCard({ value, valueTrend, loading }: CollectionValueCardProps) {
-  const { t } = useTranslation();
-  // Same points from one render to the next, so the chart only replays its animation when the trend changes.
-  const points = useMemo<ChartPoint[]>(
-    () =>
-      valueTrend
-        ? [
-            { label: '30 j', value: valueTrend.avg30 },
-            { label: '7 j', value: valueTrend.avg7 },
-            { label: '1 j', value: valueTrend.avg1 },
-          ]
-        : [],
-    [valueTrend],
-  );
+/** Today on this phone, formatted as YYYY-MM-DD like the snapshots. */
+const today = () => new Intl.DateTimeFormat('en-CA').format(new Date());
 
-  const change = valueTrend && recentValueChange(valueTrend);
-  const showTrend = !loading && valueTrend !== undefined && change !== undefined;
+const shortDay = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`;
+
+/**
+ * Small curve, then the collection value and how it moved. With snapshots from the server the curve is the value
+ * history. Before the second night it is the value trend, an estimate from recent prices.
+ */
+export function CollectionValueCard({ value, valueTrend, loading, history }: CollectionValueCardProps) {
+  const { t } = useTranslation();
+  const days = useMemo(
+    () => (history.length > 0 ? withTodayValue(history, { date: today(), amount: value.amount }) : []),
+    [history, value.amount],
+  );
+  const showHistory = days.length >= 2;
+
+  // Same points from one render to the next, so the chart only replays its animation when the data changes.
+  const points = useMemo<ChartPoint[]>(() => {
+    if (showHistory) return days.map((day) => ({ label: shortDay(day.date), value: day.amount }));
+    return valueTrend
+      ? [
+          { label: '30 j', value: valueTrend.avg30 },
+          { label: '7 j', value: valueTrend.avg7 },
+          { label: '1 j', value: valueTrend.avg1 },
+        ]
+      : [];
+  }, [showHistory, days, valueTrend]);
+
+  const change = showHistory ? dailyValueChange(days) : valueTrend && recentValueChange(valueTrend);
+  const showTrend = !loading && change !== undefined;
   const changeColor = !change ? colors.textMuted : change > 0 ? colors.success : colors.danger;
   const changeBackground = !change ? colors.surfaceRaised : change > 0 ? colors.successSoft : colors.dangerSoft;
 
@@ -53,7 +75,9 @@ export function CollectionValueCard({ value, valueTrend, loading }: CollectionVa
           <View style={[styles.change, { backgroundColor: changeBackground }]}>
             <Text variant="caption" style={{ color: changeColor }}>
               {change > 0 ? '▲ ' : change < 0 ? '▼ ' : ''}
-              {t('collection.valueChange', { change: formatSignedEuros(change) })}
+              {t(showHistory ? 'collection.valueSinceYesterday' : 'collection.valueChange', {
+                change: formatSignedEuros(change),
+              })}
             </Text>
           </View>
         )}
@@ -61,7 +85,7 @@ export function CollectionValueCard({ value, valueTrend, loading }: CollectionVa
 
       <Text variant="caption" tone="faint">
         {t('collection.valueNotice')}
-        {showTrend && t('collection.valueTrendNotice')}
+        {showTrend && t(showHistory ? 'collection.valueHistoryNotice' : 'collection.valueTrendNotice')}
         {value.unpricedCopyCount > 0 && t('collection.unpricedCopies', { count: value.unpricedCopyCount })}
       </Text>
     </View>

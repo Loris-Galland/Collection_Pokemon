@@ -159,6 +159,9 @@ export const fr = {
     value: 'Valeur de la collection',
     valueChange: '{{change}} sur 24 h (estimation)',
     valueNotice: 'Prix moyens Cardmarket, indicatifs : ce ne sont pas des prix de vente réels.',
+    valueSinceYesterday: '{{change}} depuis hier',
+    valueHistoryNotice:
+      ' La courbe montre la valeur relevée chaque nuit, ajouts et retraits d’exemplaires compris, puis celle d’aujourd’hui.',
     valueTrendNotice:
       ' La courbe et l’écart estiment la valeur de tes exemplaires actuels : l’écart compare la moyenne du dernier jour à celle des 7 derniers jours.',
     unpricedCopies_one: ' {{count}} exemplaire sans prix, compté pour 0 €.',
@@ -382,6 +385,8 @@ export const fr = {
       'Ta photo de profil, si tu en ajoutes une : une version réduite, sans ses métadonnées, conservée sur notre serveur et visible seulement par toi.',
     dataScan:
       'Les photos du scan : elles sont lues sur ton téléphone pour trouver le numéro de la carte, puis oubliées. Elles ne sont ni envoyées ni conservées.',
+    dataValue:
+      'La valeur de ta collection, relevée chaque nuit à partir des prix moyens Cardmarket, pour tracer sa courbe d’évolution.',
     dataSecurity:
       'Ta sécurité : le secret et les codes de secours de la validation en deux étapes, sous forme chiffrée.',
     dataSessions:
@@ -399,6 +404,8 @@ export const fr = {
     howLongPhoto: 'Ta photo de profil : jusqu’à ce que tu la retires ou que tu supprimes ton compte.',
     howLongCollection:
       'Ta collection et tes envies : jusqu’à ce que tu les retires ou que tu supprimes ton compte. Chaque modification laisse aussi une trace sans contenu pendant 30 jours, pour qu’elle ne soit jamais enregistrée deux fois.',
+    howLongValue:
+      'Les relevés de valeur : 400 jours, puis ils sont effacés. Tous disparaissent si tu supprimes ton compte.',
     howLongSessions: 'Tes sessions : elles expirent après 7 jours sans utilisation, puis sont effacées.',
     howLongAttempts: 'Les tentatives de connexion et les compteurs de requêtes : 48 heures au plus.',
     whoTitle: 'Qui y a accès',

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSets } from '@/features/catalog/hooks';
 import { SetCard } from '@/features/catalog/set-card';
 import { CollectionValueCard } from '@/features/collection/collection-value-card';
+import { useValueHistory } from '@/features/collection/use-value-history';
 import { useCopies } from '@/features/collection/collection-provider';
 import { CopyTile } from '@/features/collection/copy-tile';
 import { useCollectionValue } from '@/features/collection/use-collection-value';
@@ -18,6 +19,7 @@ export default function CollectionScreen() {
   const copies = useCopies();
   const { data: sets } = useSets();
   const { value, valueTrend, cards, prices, loading } = useCollectionValue();
+  const history = useValueHistory();
   const columns = useColumns(120, 8);
 
   const { copyCount, distinctCardCount } = useMemo(() => summarizeCollection(copies), [copies]);
@@ -42,7 +44,7 @@ export default function CollectionScreen() {
           <View style={styles.header}>
             <Text variant="display">{t('collection.title')}</Text>
 
-            <CollectionValueCard value={value} valueTrend={valueTrend} loading={loading} />
+            <CollectionValueCard value={value} valueTrend={valueTrend} loading={loading} history={history} />
 
             <View style={styles.stats}>
               <Stat label={t('collection.copies')} value={copyCount} />

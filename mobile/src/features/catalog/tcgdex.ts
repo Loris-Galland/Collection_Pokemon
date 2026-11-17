@@ -3,6 +3,8 @@
 
 import {
   createSearchIndex,
+  hasUnreliablePrice,
+  variantsOf,
   isPocketSet,
   readCardmarketPrices,
   searchIndex,
@@ -14,11 +16,9 @@ import {
   type Price,
   type PriceTrend,
   type SearchEntry,
-  type Variant,
 } from '@collection/shared';
 
 import { POKEMON_TCG_IMAGES } from './pokemon-tcg-images.ts';
-import { UNRELIABLE_PRICES } from './unreliable-prices.ts';
 
 const API_URL = 'https://api.tcgdex.net/v2';
 
@@ -35,11 +35,6 @@ const setIdOf = (cardId: string) => cardId.slice(0, cardId.lastIndexOf('-'));
 /** The picture of a card that TCGdex lacks in every language or announces without having. */
 function pokemonTcgImage(cardId: string): string | undefined {
   return POKEMON_TCG_IMAGES[setIdOf(cardId)]?.images[cardId];
-}
-
-/** A card whose Cardmarket price on TCGdex belongs to another card. It shows no price rather than a wrong one. */
-function hasUnreliablePrice(cardId: string): boolean {
-  return UNRELIABLE_PRICES[setIdOf(cardId)]?.includes(cardId) ?? false;
 }
 
 interface ApiCardCount {
@@ -203,16 +198,6 @@ function toCardSet(api: ApiSetSummary & { releaseDate?: string }): CardSet {
   };
 }
 
-/** Lists the variants that exist for a card, normal by default. */
-function toVariants(api: ApiCard['variants']): Variant[] {
-  const variants: Variant[] = [];
-  if (api?.normal) variants.push('normal');
-  if (api?.holo) variants.push('holo');
-  if (api?.reverse) variants.push('reverse');
-  if (api?.firstEdition) variants.push('first-edition');
-  return variants.length > 0 ? variants : ['normal'];
-}
-
 /** Sets, from newest to oldest. */
 export async function fetchSets(language: CatalogLanguage): Promise<CardSet[]> {
   const [sets, fallbacks] = await Promise.all([
@@ -262,7 +247,7 @@ export async function fetchCard(language: CatalogLanguage, cardId: string): Prom
     name: api.name,
     imageUrl: pokemonTcgImage(api.id) ?? assetUrl(api.image ?? fallback?.image),
     rarity: api.rarity,
-    variants: toVariants(api.variants),
+    variants: variantsOf(api.variants),
   };
   const otherPrint = hasUnreliablePrice(api.id);
   const market = otherPrint ? undefined : api.pricing?.cardmarket;

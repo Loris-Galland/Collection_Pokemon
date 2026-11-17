@@ -59,6 +59,7 @@ async function seedAccount({ db }: DbModule, name: string) {
     wishlistId: `${name}-list`,
     addedAt: '2026-11-01T10:00:00.000Z',
   });
+  await db.collection('valueSnapshot').insertOne({ userId, date: '2026-11-01', amount: 12.5 });
   await db.collection('avatar').insertOne({ _id: userId as never, image: `${name}-picture` });
   await db.collection('copy').insertOne({
     userId,
@@ -139,6 +140,7 @@ describe('account data', { skip: skipWithoutDatabase }, () => {
       ],
       wishlists: [{ id: 'ash-list', name: 'Feu', createdAt: '2026-11-01T10:00:00.000Z' }],
       wishes: [{ cardId: 'sv03.5-004', setId: 'sv03.5', wishlistId: 'ash-list', addedAt: '2026-11-01T10:00:00.000Z' }],
+      valueHistory: [{ date: '2026-11-01', amount: 12.5 }],
     });
   });
 
@@ -158,9 +160,10 @@ describe('account data', { skip: skipWithoutDatabase }, () => {
       db.collection('appliedCollectionChange').countDocuments({ userId: brock }),
       db.collection('wishlist').countDocuments({ userId: brock }),
       db.collection('wish').countDocuments({ userId: brock }),
+      db.collection('valueSnapshot').countDocuments({ userId: brock }),
       db.collection('accountLimit').countDocuments({ _id: { $regex: `^${brock}:` } as never }),
     ]);
-    assert.deepEqual(left, [0, 0, 0, 0, 0, 0, 0]);
+    assert.deepEqual(left, [0, 0, 0, 0, 0, 0, 0, 0]);
     assert.deepEqual(await accountData.exportAccountData(misty), mistyBefore);
     assert.equal(await db.collection('twoFactor').countDocuments({ userId: new ObjectId(misty) }), 1);
   });

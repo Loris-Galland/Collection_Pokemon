@@ -78,3 +78,16 @@ export function readCardmarketTrends(card: PricedCard, market: CardmarketPricing
     return trend.avg30 || trend.avg7 || trend.avg1 ? [trend] : [];
   });
 }
+
+/** The variant flags TCGdex gives a card. */
+export type TcgdexVariants = Partial<Record<'normal' | 'reverse' | 'holo' | 'firstEdition', boolean>>;
+
+/** Lists the variants that exist for a card, normal by default. */
+export function variantsOf(flags: TcgdexVariants | undefined): Variant[] {
+  const variants: Variant[] = [];
+  if (flags?.normal) variants.push('normal');
+  if (flags?.holo) variants.push('holo');
+  if (flags?.reverse) variants.push('reverse');
+  if (flags?.firstEdition) variants.push('first-edition');
+  return variants.length > 0 ? variants : ['normal'];
+}

@@ -41,6 +41,7 @@ export default function PrivacyScreen() {
         <Paragraph>{t('privacy.dataCounters')}</Paragraph>
         <Paragraph>{t('privacy.dataCollection')}</Paragraph>
         <Paragraph>{t('privacy.dataWishes')}</Paragraph>
+        <Paragraph>{t('privacy.dataValue')}</Paragraph>
       </Section>
 
       <Section title={t('privacy.whyTitle')}>
@@ -51,6 +52,7 @@ export default function PrivacyScreen() {
         <Paragraph>{t('privacy.howLongAccount')}</Paragraph>
         <Paragraph>{t('privacy.howLongPhoto')}</Paragraph>
         <Paragraph>{t('privacy.howLongCollection')}</Paragraph>
+        <Paragraph>{t('privacy.howLongValue')}</Paragraph>
         <Paragraph>{t('privacy.howLongSessions')}</Paragraph>
         <Paragraph>{t('privacy.howLongAttempts')}</Paragraph>
       </Section>

@@ -67,7 +67,13 @@ export function computeValueTrend(
     avg1 += closest1 * copy.quantity;
   }
   if (avg1 === 0) return undefined;
-  return { avg30: roundCents(avg30), avg7: roundCents(avg7), avg1: roundCents(avg1), currency: 'EUR', untrackedCopyCount };
+  return {
+    avg30: roundCents(avg30),
+    avg7: roundCents(avg7),
+    avg1: roundCents(avg1),
+    currency: 'EUR',
+    untrackedCopyCount,
+  };
 }
 
 /** Recent change of the value, meaning the average of the last day against the average of the last 7 days. */
@@ -85,3 +91,21 @@ export interface ValueSnapshot {
 
 /** Value history, meaning the list of snapshots from oldest to newest. */
 export type ValueHistory = ValueSnapshot[];
+
+/** A snapshot as the app receives it, for the signed in account only. */
+export type DailyValue = Pick<ValueSnapshot, 'date' | 'amount'>;
+
+/**
+ * The value history with today's value at its end, since the last snapshot was taken at night and copies may have
+ * changed since. Today's value replaces a snapshot of the same day. Returns the points oldest first.
+ */
+export function withTodayValue(history: readonly DailyValue[], today: DailyValue): DailyValue[] {
+  return [...history.filter((snapshot) => snapshot.date < today.date), today];
+}
+
+/** How the value moved since the day before, or undefined with fewer than two points. */
+export function dailyValueChange(points: readonly DailyValue[]): number | undefined {
+  const last = points.at(-1);
+  const before = points.at(-2);
+  return last && before ? roundCents(last.amount - before.amount) : undefined;
+}

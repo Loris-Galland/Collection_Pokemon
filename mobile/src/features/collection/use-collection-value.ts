@@ -15,8 +15,8 @@ import type { CardDetail } from '@/features/catalog/tcgdex';
 import { useCopies } from './collection-provider';
 
 /**
- * Prototype only. Prices come from the details of each card on TCGdex, which are cached, so adding a card only loads
- * that card. Later the server will fetch them once a day.
+ * Prices come from the details of each card on TCGdex, which are kept on the phone, so adding a card only loads
+ * that card and the value shows offline. The server reads the same prices each night for the value history.
  */
 export function useCollectionValue(): {
   value: CollectionValue;

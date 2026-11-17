@@ -5,6 +5,9 @@ import { clearAccountLimits } from './account-limit.js';
 import { deleteAvatar, readAvatar } from './avatar.js';
 import { copies, deleteCollection } from './copies.js';
 import { deleteWishes, wishes, wishlists } from './wish-store.js';
+
+// The value history, read here without the shared package, like the other data of an account.
+const valueSnapshots = () => db.collection<{ userId: string; date: string; amount: number }>('valueSnapshot');
 import { db } from './db.js';
 
 // The sign in imports this file. It must only import types from the shared package, so that deleting an account keeps
@@ -33,6 +36,7 @@ export interface AccountExport {
   collection: Copy[];
   wishlists: Wishlist[];
   wishes: Wish[];
+  valueHistory: { date: string; amount: number }[];
 }
 
 // Better Auth keeps its ids as ObjectId, while our own collections keep them as text.
@@ -80,7 +84,7 @@ export async function exportAccountData(userId: string): Promise<AccountExport |
   const objectId = new ObjectId(userId);
   const user = await db.collection<UserDocument>('user').findOne({ _id: objectId });
   if (!user) return null;
-  const [accounts, sessions, avatar, collection, lists, wished] = await Promise.all([
+  const [accounts, sessions, avatar, collection, lists, wished, valueHistory] = await Promise.all([
     db.collection<AccountDocument>('account').find({ userId: objectId }).toArray(),
     db.collection<SessionDocument>('session').find({ userId: objectId }).toArray(),
     readAvatar(userId),
@@ -95,6 +99,10 @@ export async function exportAccountData(userId: string): Promise<AccountExport |
     wishes()
       .find({ userId }, { projection: { _id: 0, userId: 0 } })
       .limit(MAX_EXPORTED_WISHES)
+      .toArray(),
+    valueSnapshots()
+      .find({ userId }, { projection: { _id: 0, date: 1, amount: 1 } })
+      .sort({ date: 1 })
       .toArray(),
   ]);
   return {
@@ -123,6 +131,7 @@ export async function exportAccountData(userId: string): Promise<AccountExport |
     collection,
     wishlists: lists,
     wishes: wished,
+    valueHistory,
   };
 }
 
@@ -131,7 +140,13 @@ export async function exportAccountData(userId: string): Promise<AccountExport |
  * needs it. If the deletion then fails, the account can still try it again instead of being locked out.
  */
 export async function eraseBeforeUserDeletion(userId: string): Promise<void> {
-  await Promise.all([deleteAvatar(userId), deleteCollection(userId), deleteWishes(userId), clearAccountLimits(userId)]);
+  await Promise.all([
+    deleteAvatar(userId),
+    deleteCollection(userId),
+    deleteWishes(userId),
+    valueSnapshots().deleteMany({ userId }),
+    clearAccountLimits(userId),
+  ]);
 }
 
 /**

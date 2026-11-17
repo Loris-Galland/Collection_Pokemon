@@ -19,6 +19,7 @@ export const accountLimitKeys = (userId: string) => ({
   exportRead: `${userId}:export-read`,
   wishesRead: `${userId}:wishes-read`,
   wishesWrite: `${userId}:wishes-write`,
+  valueHistoryRead: `${userId}:value-history-read`,
   twoFactorFailure: `${userId}:two-factor-failure`,
 });
 

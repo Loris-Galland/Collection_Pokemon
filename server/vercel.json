@@ -1,6 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["cdg1"],
+  "regions": [
+    "cdg1"
+  ],
   "outputDirectory": "public",
   "rewrites": [
     {
@@ -13,5 +15,10 @@
       "path": "/api/cron/daily-snapshot",
       "schedule": "0 4 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/cron/daily-snapshot.ts": {
+      "maxDuration": 60
+    }
+  }
 }

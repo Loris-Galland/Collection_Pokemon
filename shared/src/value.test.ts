@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { priceKey, type PriceTrend } from './catalog.ts';
 import type { Copy } from './collection.ts';
-import { computeValueTrend, recentValueChange } from './value.ts';
+import { computeValueTrend, dailyValueChange, recentValueChange, withTodayValue } from './value.ts';
 
 const copy = (cardId: string, quantity = 1): Copy => ({
   id: cardId,
@@ -54,5 +54,25 @@ describe('recentValueChange', () => {
     const trend = { avg30: 1, avg7: 10.1, avg1: 10.3, currency: 'EUR' as const, untrackedCopyCount: 0 };
     assert.equal(recentValueChange(trend), 0.2);
     assert.equal(recentValueChange({ ...trend, avg1: 9.6 }), -0.5);
+  });
+});
+
+describe('withTodayValue', () => {
+  it('adds the value of today after the snapshots, replacing one of the same day', () => {
+    const history = [
+      { date: '2026-11-15', amount: 10 },
+      { date: '2026-11-16', amount: 12 },
+      { date: '2026-11-17', amount: 11 },
+    ];
+    const points = withTodayValue(history, { date: '2026-11-17', amount: 15.5 });
+    assert.deepEqual(
+      points.map((point) => point.amount),
+      [10, 12, 15.5],
+    );
+    assert.equal(dailyValueChange(points), 3.5);
+  });
+
+  it('has no change with a single point', () => {
+    assert.equal(dailyValueChange(withTodayValue([], { date: '2026-11-17', amount: 4 })), undefined);
   });
 });
