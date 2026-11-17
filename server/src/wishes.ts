@@ -86,8 +86,9 @@ async function createLists(
 ): Promise<Outcome> {
   for (const list of lists) {
     if (await listExists(userId, list.id, session)) continue;
-    if ((await wishlists().countDocuments({ userId }, { session })) >= MAX_WISHLISTS_PER_ACCOUNT)
+    if ((await wishlists().countDocuments({ userId }, { session })) >= MAX_WISHLISTS_PER_ACCOUNT) {
       return 'too-many-lists';
+    }
     await wishlists().insertOne(list, { session });
   }
   return 'saved';

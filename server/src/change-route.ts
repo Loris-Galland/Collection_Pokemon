@@ -34,19 +34,18 @@ export interface ChangeRouteOptions<C, R extends string> {
  */
 export function changeRoute<C, R extends string>(options: ChangeRouteOptions<C, R>) {
   const { limitKeys, read, isChange, save, refusals } = options;
+  const overLimit = async (key: string) => (await countEvent(key, LIMIT_WINDOW_MS)) > MAX_REQUESTS_PER_WINDOW;
   return {
     async GET(request: Request): Promise<Response> {
       const userId = await signedInUserId(request);
       if (!userId) return unauthorized();
-      if ((await countEvent(limitKeys(userId).read, LIMIT_WINDOW_MS)) > MAX_REQUESTS_PER_WINDOW)
-        return tooManyRequests();
+      if (await overLimit(limitKeys(userId).read)) return tooManyRequests();
       return Response.json(await read(userId), { headers: NO_STORE });
     },
     async POST(request: Request): Promise<Response> {
       const userId = await signedInUserId(request);
       if (!userId) return unauthorized();
-      if ((await countEvent(limitKeys(userId).write, LIMIT_WINDOW_MS)) > MAX_REQUESTS_PER_WINDOW)
-        return tooManyRequests();
+      if (await overLimit(limitKeys(userId).write)) return tooManyRequests();
       const body = await readJsonBody(request, MAX_REQUEST_LENGTH);
       if (body === TOO_LARGE) return tooLarge();
       const { changeId, change } = (body ?? {}) as { changeId?: unknown; change?: unknown };
