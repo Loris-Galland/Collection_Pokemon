@@ -2,17 +2,19 @@ import { applyCollectionChange, type CollectionChange, type Copy, type CopyInput
 
 import { saveFailureOf, type CollectionSource, type SaveFailure } from './collection-source.ts';
 
-/** `unavailable` means the collection could not be loaded, and `read-only` that it can be viewed but not changed. */
-export type CollectionStatus = 'loading' | 'ready' | 'read-only' | 'unavailable';
+/** `unavailable` means the collection could not be loaded. */
+export type CollectionStatus = 'loading' | 'ready' | 'unavailable';
 
 export interface CollectionState {
   status: CollectionStatus;
   /** What the screens show, including the changes still being saved. */
   copies: readonly Copy[];
-  /** What the source has confirmed. */
+  /** What the source has kept. */
   savedCopies: readonly Copy[];
-  /** Why the last change could not be saved. It was undone. */
+  /** Why the last change could not be saved. It was undone, unless the session ended and it waits on the phone. */
   saveError: SaveFailure | undefined;
+  /** Changes kept on the phone that the server does not have yet, for instance made without a network. */
+  unsentCount: number;
 }
 
 export interface CollectionActions {
@@ -27,6 +29,8 @@ export interface CollectionStore extends CollectionActions {
   subscribe: (listener: () => void) => () => void;
   getState: () => CollectionState;
   load: () => Promise<void>;
+  /** Sends the changes waiting on the phone, for instance when the network comes back. */
+  sync: () => Promise<void>;
   dismissSaveError: () => void;
 }
 
@@ -34,12 +38,19 @@ const NOTHING: readonly Copy[] = [];
 
 /**
  * Keeps the collection in memory and hides its source from the screens. A change shows at once, so the stepper stays
- * quick, and changes reach the source one at a time and in order. A change the source could not save is undone, and
- * the collection becomes read-only when the network is gone.
+ * quick, and changes reach the source one at a time and in order. A change the source could not keep is undone.
  */
 export function createCollectionStore(source: CollectionSource, newId: () => string): CollectionStore {
-  let state: CollectionState = { status: 'loading', copies: NOTHING, savedCopies: NOTHING, saveError: undefined };
+  let state: CollectionState = {
+    status: 'loading',
+    copies: NOTHING,
+    savedCopies: NOTHING,
+    saveError: undefined,
+    unsentCount: 0,
+  };
   let loadInProgress: Promise<void> | undefined;
+  let syncInProgress: Promise<void> | undefined;
+  let syncAgain = false;
   let unsaved: CollectionChange[] = [];
   let queue = Promise.resolve();
   const listeners = new Set<() => void>();
@@ -49,21 +60,46 @@ export function createCollectionStore(source: CollectionSource, newId: () => str
     for (const listener of listeners) listener();
   };
 
+  const runSync = async () => {
+    if (!source.sync) return;
+    do {
+      syncAgain = false;
+      try {
+        const { unsentCount, refused } = await source.sync();
+        if (unsentCount !== state.unsentCount) update({ unsentCount });
+        if (refused) {
+          update({ saveError: refused });
+          // A dropped change is still on screen, and only the server knows what the collection is now.
+          if (refused !== 'signed-out') await read();
+        }
+      } catch (error) {
+        console.warn('Could not send the collection', error);
+      }
+    } while (syncAgain);
+  };
+
+  const sync = () => {
+    if (syncInProgress) {
+      // A change kept during this run is sent by the next one.
+      syncAgain = true;
+      return syncInProgress;
+    }
+    syncInProgress = runSync().finally(() => {
+      syncInProgress = undefined;
+    });
+    return syncInProgress;
+  };
+
   const save = async (change: CollectionChange) => {
     try {
       await source.apply(change);
       unsaved = unsaved.slice(1);
       update({ savedCopies: applyCollectionChange(state.savedCopies, change) });
+      sync();
     } catch (error) {
       console.warn('Could not save the collection', error);
       unsaved = unsaved.slice(1);
-      const saveError = saveFailureOf(error);
-      update({
-        copies: unsaved.reduce(applyCollectionChange, state.savedCopies),
-        saveError,
-        // Without a network the next changes would fail too, so the collection can only be viewed until it comes back.
-        ...(saveError === 'offline' ? { status: 'read-only' as const } : {}),
-      });
+      update({ copies: unsaved.reduce(applyCollectionChange, state.savedCopies), saveError: saveFailureOf(error) });
     }
   };
 
@@ -74,21 +110,22 @@ export function createCollectionStore(source: CollectionSource, newId: () => str
     queue = queue.then(() => save(next));
   };
 
-  const read = async () => {
+  async function read() {
     // A new load would wipe the changes still being saved.
     if (unsaved.length > 0) return;
     // A collection already on screen stays there while it is read again, so the screens do not flash.
-    const shown = state.status === 'ready' || state.status === 'read-only';
+    const shown = state.status === 'ready';
     if (!shown) update({ status: 'loading' });
     try {
-      const { copies, readOnly } = await source.load();
+      const { copies } = await source.load();
       if (unsaved.length > 0) return;
-      update({ status: readOnly ? 'read-only' : 'ready', copies, savedCopies: copies });
+      update({ status: 'ready', copies, savedCopies: copies });
+      sync();
     } catch (error) {
       console.warn('Could not load the collection', error);
       if (!shown) update({ status: 'unavailable' });
     }
-  };
+  }
 
   return {
     subscribe: (listener) => {
@@ -102,6 +139,7 @@ export function createCollectionStore(source: CollectionSource, newId: () => str
       });
       return loadInProgress;
     },
+    sync,
     dismissSaveError: () => {
       if (state.saveError) update({ saveError: undefined });
     },

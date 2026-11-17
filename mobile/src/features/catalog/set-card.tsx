@@ -7,6 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { formatPercent } from '@/lib/format';
+import { keptOrRemote } from '@/features/offline/catalog-files';
 import { PressableScale, ProgressBar, Text, gradientStyle, radius, spacing } from '@/ui';
 
 import { setThemeOf } from './set-theme';
@@ -54,7 +55,7 @@ export const SetCard = memo(function SetCard({ set, progress, index = 0 }: SetCa
         style={[styles.card, gradientStyle(theme.gradient)]}>
         {set.symbolUrl && !symbolFailed && (
           <Image
-            source={{ uri: set.symbolUrl }}
+            source={{ uri: keptOrRemote(set.symbolUrl) }}
             style={styles.watermark}
             onError={() => setSymbolFailed(true)}
             contentFit="contain"
@@ -66,7 +67,7 @@ export const SetCard = memo(function SetCard({ set, progress, index = 0 }: SetCa
         <View style={styles.top}>
           {showLogo ? (
             <Image
-              source={{ uri: set.logoUrl }}
+              source={{ uri: keptOrRemote(set.logoUrl) }}
               style={styles.logo}
               onError={() => setLogoFailed(true)}
               contentFit="contain"

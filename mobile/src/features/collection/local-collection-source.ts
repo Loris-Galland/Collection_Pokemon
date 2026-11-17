@@ -3,7 +3,12 @@ import { applyCollectionChange, isCopy, type Copy } from '@collection/shared';
 import { readJson, removeJson, writeJson } from '@/lib/storage';
 
 import type { CollectionSource } from './collection-source';
-import type { StoredCopies } from './server-collection-source';
+import {
+  restoreQueuedChanges,
+  type QueuedChange,
+  type StoredChanges,
+  type StoredCopies,
+} from './server-collection-source';
 
 // Keeps the valid copies only, so one corrupted entry does not cost the whole collection.
 export const restoreCopies = (value: unknown): Copy[] | undefined =>
@@ -15,7 +20,7 @@ export function createLocalCollectionSource(storageKey: string): CollectionSourc
   return {
     async load() {
       stored = await readJson<Copy[]>(storageKey, [], restoreCopies);
-      return { copies: stored, readOnly: false };
+      return { copies: stored };
     },
     async apply(change) {
       const next = applyCollectionChange(stored, change);
@@ -30,6 +35,15 @@ export function storedCopies(storageKey: string): StoredCopies {
   return {
     read: () => readJson<Copy[] | undefined>(storageKey, undefined, restoreCopies),
     write: (copies) => writeJson(storageKey, copies),
+    remove: () => removeJson([storageKey]),
+  };
+}
+
+/** The changes waiting for the server, saved on the phone under one key. */
+export function storedChanges(storageKey: string): StoredChanges {
+  return {
+    read: () => readJson<readonly QueuedChange[] | undefined>(storageKey, undefined, restoreQueuedChanges),
+    write: (changes) => writeJson(storageKey, changes),
     remove: () => removeJson([storageKey]),
   };
 }

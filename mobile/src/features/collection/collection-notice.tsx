@@ -5,22 +5,21 @@ import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { Text, colors, radius, spacing } from '@/ui';
 
-import { useCollectionSaveError, useCollectionStatus } from './collection-provider';
+import { useCollectionSaveError, useUnsentCount } from './collection-provider';
 import type { SaveFailure } from './collection-source';
 
 const SAVE_ERROR_DURATION_MS = 6000;
 
 const SAVE_ERROR_MESSAGES = {
-  offline: 'collection.saveOffline',
   full: 'collection.saveFull',
   'signed-out': 'collection.saveSignedOut',
   other: 'collection.saveFailed',
 } as const satisfies Record<SaveFailure, string>;
 
-/** Tells the user why the collection cannot be changed, or why the last change was undone. */
+/** Tells the user why the last change was undone, or how many changes wait for the network. */
 export function CollectionNotice() {
   const { t } = useTranslation();
-  const readOnly = useCollectionStatus() === 'read-only';
+  const unsentCount = useUnsentCount();
   const { saveError, dismiss } = useCollectionSaveError();
 
   useEffect(() => {
@@ -38,11 +37,11 @@ export function CollectionNotice() {
       </Animated.View>
     );
   }
-  if (readOnly) {
+  if (unsentCount > 0) {
     return (
-      <Animated.View entering={FadeInDown.springify()} style={styles.notice}>
+      <Animated.View entering={FadeInDown.springify()} exiting={FadeOut} style={styles.notice}>
         <Text variant="caption" tone="muted">
-          {t('collection.readOnly')}
+          {t('collection.unsent', { count: unsentCount })}
         </Text>
       </Animated.View>
     );

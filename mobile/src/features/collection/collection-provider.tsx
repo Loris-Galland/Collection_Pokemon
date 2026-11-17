@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState, useSyncExterna
 import { useTranslation } from 'react-i18next';
 import { AppState } from 'react-native';
 
-import { adoptLegacyData, collectionCacheKey, collectionKey } from '@/features/account/local-data';
+import { adoptLegacyData, collectionCacheKey, collectionKey, collectionOutboxKey } from '@/features/account/local-data';
 import { useAccount } from '@/features/account/use-account';
 import { createId } from '@/lib/id';
 import { StateView } from '@/ui';
@@ -18,7 +18,7 @@ import {
   type CollectionStatus,
   type CollectionStore,
 } from './collection-store';
-import { createLocalCollectionSource, storedCopies } from './local-collection-source';
+import { createLocalCollectionSource, storedChanges, storedCopies } from './local-collection-source';
 import { createServerCollectionSource } from './server-collection-source';
 
 interface OwnedStore {
@@ -52,16 +52,21 @@ function sourceFor(ownerId: string | undefined): CollectionSource {
     request: requestCollection,
     cache: storedCopies(collectionCacheKey(ownerId)),
     local: storedCopies(collectionKey(ownerId)),
+    outbox: storedChanges(collectionOutboxKey(ownerId)),
     newChangeId: createId,
   });
 }
 
-/** Reads a read-only collection again when the network comes back or the app returns to the screen. */
+/**
+ * Sends the changes made offline when the network comes back or the app returns to the screen. Coming back also reads
+ * the collection again, since it may have changed on another phone.
+ */
 function useReconnect(store: CollectionStore | undefined): void {
   useEffect(() => {
     if (!store) return;
     const retry = () => {
-      if (store.getState().status === 'read-only') store.load();
+      if (store.getState().unsentCount > 0) store.sync();
+      else store.load();
     };
     const network = Network.addNetworkStateListener((state) => {
       if (state.isInternetReachable) retry();
@@ -140,9 +145,14 @@ export function useSavedCopies(): readonly Copy[] {
   return useSelected(useStore(), (state) => state.savedCopies);
 }
 
-/** Whether the collection can be changed. */
+/** Whether the collection is loaded. */
 export function useCollectionStatus(): CollectionStatus {
   return useSelected(useStore(), (state) => state.status);
+}
+
+/** How many changes wait on the phone for the server. */
+export function useUnsentCount(): number {
+  return useSelected(useStore(), (state) => state.unsentCount);
 }
 
 /** Why the last change could not be saved, if it could not, and how to clear that message. */

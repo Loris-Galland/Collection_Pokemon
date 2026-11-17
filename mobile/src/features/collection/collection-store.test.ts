@@ -3,7 +3,12 @@ import type { CollectionChange, Copy, CopyInput } from '@collection/shared';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { CollectionSourceError, type CollectionSource, type LoadedCollection } from './collection-source.ts';
+import {
+  CollectionSourceError,
+  type CollectionSource,
+  type LoadedCollection,
+  type SyncReport,
+} from './collection-source.ts';
 import { createCollectionStore } from './collection-store.ts';
 
 const input: CopyInput = {
@@ -17,7 +22,7 @@ const input: CopyInput = {
 const saved: Copy = { ...input, id: 'saved', cardId: 'sv03.5-007' };
 
 /** A source whose answers are given by hand, to control what happens while a change is being saved. */
-function fakeSource(loaded: LoadedCollection = { copies: [saved], readOnly: false }) {
+function fakeSource(loaded: LoadedCollection = { copies: [saved] }) {
   const received: CollectionChange[] = [];
   const answers: { resolve: () => void; reject: (error: Error) => void }[] = [];
   const source: CollectionSource = {
@@ -117,22 +122,13 @@ describe('collection store', () => {
     assert.equal(store.getState().saveError, undefined);
   });
 
-  it('ignores changes when the collection is read-only', async () => {
-    const { store, received } = await loadedStore({ copies: [saved], readOnly: true });
-    assert.equal(store.getState().status, 'read-only');
-    store.add(input);
-    await settle();
-    assert.deepEqual(ids(store.getState().copies), ['saved']);
-    assert.deepEqual(received, []);
-  });
-
   it('becomes unavailable when loading fails, and can try again', async () => {
     let attempts = 0;
     const source: CollectionSource = {
       load: async () => {
         attempts += 1;
         if (attempts === 1) throw new Error('offline');
-        return { copies: [saved], readOnly: false };
+        return { copies: [saved] };
       },
       apply: async () => {},
     };
@@ -151,7 +147,7 @@ describe('collection store', () => {
     const source: CollectionSource = {
       load: async () => {
         attempts += 1;
-        return { copies: [], readOnly: false };
+        return { copies: [] };
       },
       apply: async () => {},
     };
@@ -166,7 +162,7 @@ describe('adding several copies', () => {
     const applied: CollectionChange[] = [];
     let id = 0;
     const store = createCollectionStore(
-      { load: async () => ({ copies: [], readOnly: false }), apply: async (change) => void applied.push(change) },
+      { load: async () => ({ copies: [] }), apply: async (change) => void applied.push(change) },
       () => `id-${++id}`,
     );
     await store.load();
@@ -184,7 +180,12 @@ describe('adding several copies', () => {
 
   it('undoes the whole selection when it cannot be saved', async () => {
     const store = createCollectionStore(
-      { load: async () => ({ copies: [], readOnly: false }), apply: async () => { throw new Error('refused'); } },
+      {
+        load: async () => ({ copies: [] }),
+        apply: async () => {
+          throw new Error('refused');
+        },
+      },
       () => 'id',
     );
     await store.load();
@@ -197,19 +198,56 @@ describe('adding several copies', () => {
   });
 });
 
-describe('losing the network', () => {
-  it('says why a change failed and becomes read-only when offline', async () => {
-    const { store, answers } = await loadedStore();
+describe('changes waiting for the server', () => {
+  /** A source that keeps every change, and whose sync reports are given by the test. */
+  function queueingSource(reports: SyncReport[]) {
+    let loads = 0;
+    const source: CollectionSource = {
+      load: async () => (loads++, { copies: [saved] }),
+      apply: async () => {},
+      sync: async () => reports.shift() ?? { unsentCount: 0 },
+    };
+    return { source, loads: () => loads };
+  }
+
+  it('shows how many changes wait for the network', async () => {
+    const { source } = queueingSource([{ unsentCount: 0 }, { unsentCount: 1 }]);
+    const store = createCollectionStore(source, () => 'new');
+    await store.load();
+    // Each kept change is followed by a sync.
     store.add(input);
     await settle();
-    answers[0]?.reject(new CollectionSourceError('offline'));
+    assert.equal(store.getState().unsentCount, 1);
+    assert.equal(store.getState().saveError, undefined);
+    assert.deepEqual(ids(store.getState().copies), ['saved', 'new'], 'the change stays on screen');
+
+    await store.sync();
+    assert.equal(store.getState().unsentCount, 0);
+  });
+
+  it('says why a queued change was refused and reads the collection again', async () => {
+    const fake = queueingSource([{ unsentCount: 0 }, { unsentCount: 0, refused: 'full' }]);
+    const store = createCollectionStore(fake.source, () => 'new');
+    await store.load();
+    store.add(input);
     await settle();
-    assert.equal(store.getState().saveError, 'offline');
-    assert.equal(store.getState().status, 'read-only');
+    assert.equal(store.getState().saveError, 'full');
+    assert.equal(fake.loads(), 2);
     assert.deepEqual(ids(store.getState().copies), ['saved']);
   });
 
-  it('stays ready when the collection is full', async () => {
+  it('keeps the changes on screen when the session has ended', async () => {
+    const fake = queueingSource([{ unsentCount: 0 }, { unsentCount: 1, refused: 'signed-out' }]);
+    const store = createCollectionStore(fake.source, () => 'new');
+    await store.load();
+    store.add(input);
+    await settle();
+    assert.equal(store.getState().saveError, 'signed-out');
+    assert.equal(fake.loads(), 1);
+    assert.deepEqual(ids(store.getState().copies), ['saved', 'new']);
+  });
+
+  it('stays ready when a change cannot be kept', async () => {
     const { store, answers } = await loadedStore();
     store.add(input);
     await settle();
@@ -219,45 +257,30 @@ describe('losing the network', () => {
     assert.equal(store.getState().status, 'ready');
   });
 
-  it('becomes ready again when a new load reaches the source', async () => {
-    let online = false;
-    const source: CollectionSource = {
-      load: async () => ({ copies: [saved], readOnly: !online }),
-      apply: async () => {},
-    };
-    const store = createCollectionStore(source, () => 'id');
-    await store.load();
-    assert.equal(store.getState().status, 'read-only');
-
-    online = true;
-    const statuses: string[] = [];
-    store.subscribe(() => statuses.push(store.getState().status));
-    await store.load();
-    assert.equal(store.getState().status, 'ready');
-    assert.deepEqual(statuses, ['ready'], 'the collection on screen does not flash a loader');
-  });
-
   it('keeps the collection on screen when a new load fails', async () => {
     let attempts = 0;
     const source: CollectionSource = {
       load: async () => {
         attempts += 1;
         if (attempts > 1) throw new Error('offline');
-        return { copies: [saved], readOnly: true };
+        return { copies: [saved] };
       },
       apply: async () => {},
     };
     const store = createCollectionStore(source, () => 'id');
     await store.load();
+    const statuses: string[] = [];
+    store.subscribe(() => statuses.push(store.getState().status));
     await store.load();
-    assert.equal(store.getState().status, 'read-only');
+    assert.equal(store.getState().status, 'ready');
+    assert.deepEqual(statuses, [], 'the collection on screen does not flash a loader');
     assert.deepEqual(ids(store.getState().copies), ['saved']);
   });
 
   it('does not load again while changes are being saved', async () => {
     let loads = 0;
     const fake = fakeSource();
-    const source: CollectionSource = { ...fake.source, load: async () => (loads++, { copies: [saved], readOnly: false }) };
+    const source: CollectionSource = { ...fake.source, load: async () => (loads++, { copies: [saved] }) };
     const store = createCollectionStore(source, () => 'new');
     await store.load();
     store.add(input);

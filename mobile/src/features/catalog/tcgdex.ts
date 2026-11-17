@@ -98,11 +98,57 @@ export interface CardDetail {
 
 export type ImageQuality = 'low' | 'high';
 
-/** Calls the TCGdex API in the requested language and returns the JSON. */
+/**
+ * Keeps the answers of TCGdex on the phone, so the catalog still opens without a network. `read` gives undefined when
+ * nothing is kept for that request.
+ */
+export interface ResponseStore {
+  read(request: string): Promise<unknown>;
+  write(request: string, body: unknown): Promise<void>;
+}
+
+let responseStore: ResponseStore | undefined;
+
+/** Chooses where answers are kept. Without a store, as in tests, the catalog needs the network. */
+export function keepResponsesIn(store: ResponseStore | undefined): void {
+  responseStore = store;
+}
+
+/** Past this delay TCGdex counts as unreachable, so a weak network falls back to what the phone kept. */
+const TIMEOUT_MS = 15_000;
+
+/** TCGdex answered that the request leads nowhere. What the phone kept would not be better. */
+class NotFoundError extends Error {}
+
+async function fetchJson(url: string, path: string): Promise<unknown> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (response.status === 404) throw new NotFoundError(`TCGdex has nothing at ${path}`);
+    if (!response.ok) throw new Error(`TCGdex returned ${response.status} for ${path}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Calls the TCGdex API in the requested language and returns the JSON. Each answer is kept on the phone, and the last
+ * one kept is used when TCGdex cannot be reached. Its prices are then those of that day.
+ */
 async function get<T>(language: CatalogLanguage, path: string): Promise<T> {
-  const response = await fetch(`${API_URL}/${language}${path}`);
-  if (!response.ok) throw new Error(`TCGdex returned ${response.status} for ${path}`);
-  return (await response.json()) as T;
+  const request = `${language}${path}`;
+  try {
+    const body = await fetchJson(`${API_URL}/${request}`, path);
+    responseStore?.write(request, body).catch((error) => console.warn(`Could not keep ${request} offline`, error));
+    return body as T;
+  } catch (error) {
+    if (error instanceof NotFoundError || !responseStore) throw error;
+    const kept = await responseStore.read(request).catch(() => undefined);
+    if (kept === undefined) throw error;
+    return kept as T;
+  }
 }
 
 /**
@@ -267,20 +313,19 @@ async function buildIndexInSlices(cards: readonly CardToIndex[]): Promise<Search
 function loadSearchIndex(language: CatalogLanguage): Promise<SearchEntry<ApiCardSummary>[]> {
   let index = searchIndexes.get(language);
   if (!index) {
-    index = Promise.all([
-      get<ApiCardSummary[]>(language, '/cards'),
-      get<ApiSetSummary[]>(language, '/sets'),
-    ]).then(([cards, sets]) => {
-      const setPosition = new Map(sets.map((set, position) => [set.id, { name: set.name, position }]));
-      const newestFirst = cards
-        .filter((card) => !isPocketSet(setIdOf(card.id)))
-        .map((card) => {
-          const set = setPosition.get(setIdOf(card.id));
-          return { card, setName: set?.name ?? '', position: set?.position ?? -1 };
-        })
-        .sort((a, b) => b.position - a.position);
-      return buildIndexInSlices(newestFirst);
-    });
+    index = Promise.all([get<ApiCardSummary[]>(language, '/cards'), get<ApiSetSummary[]>(language, '/sets')]).then(
+      ([cards, sets]) => {
+        const setPosition = new Map(sets.map((set, position) => [set.id, { name: set.name, position }]));
+        const newestFirst = cards
+          .filter((card) => !isPocketSet(setIdOf(card.id)))
+          .map((card) => {
+            const set = setPosition.get(setIdOf(card.id));
+            return { card, setName: set?.name ?? '', position: set?.position ?? -1 };
+          })
+          .sort((a, b) => b.position - a.position);
+        return buildIndexInSlices(newestFirst);
+      },
+    );
     index.catch(() => searchIndexes.delete(language));
     searchIndexes.set(language, index);
   }
@@ -290,6 +335,11 @@ function loadSearchIndex(language: CatalogLanguage): Promise<SearchEntry<ApiCard
 /** Starts loading the list of cards ahead of a search. A failure only means the search itself tries again. */
 export function prepareCardSearch(language: CatalogLanguage): void {
   loadSearchIndex(language).catch(() => undefined);
+}
+
+/** Loads the list of cards of both languages, so a search works offline too. Rejects when it could not. */
+export async function keepCardSearchOffline(language: CatalogLanguage): Promise<void> {
+  await Promise.all([loadSearchIndex(language), loadSearchIndex(otherLanguage(language))]);
 }
 
 /** Cards in the catalog language matching the query, also by their name in the other language when nothing else does. */

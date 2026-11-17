@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it, mock } from 'node:test';
 
-import { cardImageUrl, fetchCard, fetchSet, fetchSets, searchCards } from './tcgdex.ts';
+import { cardImageUrl, fetchCard, fetchSet, fetchSets, keepResponsesIn, searchCards } from './tcgdex.ts';
 
 const ASSETS = 'https://assets.tcgdex.net';
 const cardCount = { official: 2, total: 2 };
@@ -66,7 +66,12 @@ describe('missing pictures', () => {
   it('refuses a fallback picture from another host', async () => {
     mockApi({
       'fr/sets/c': { id: 'c', name: 'C', cardCount, cards: [{ id: 'c-1', localId: '1', name: 'Un' }] },
-      'en/sets/c': { id: 'c', name: 'C', cardCount, cards: [{ id: 'c-1', localId: '1', name: 'One', image: 'https://evil.example/1' }] },
+      'en/sets/c': {
+        id: 'c',
+        name: 'C',
+        cardCount,
+        cards: [{ id: 'c-1', localId: '1', name: 'One', image: 'https://evil.example/1' }],
+      },
     });
 
     const { cards } = await fetchSet('fr', 'c');
@@ -134,8 +139,18 @@ describe('missing pictures', () => {
 describe('pictures from the bundled table', () => {
   it('fills a set no TCGdex language has pictures for', async () => {
     mockApi({
-      'fr/sets/30th-c': { id: '30th-c', name: 'Collection Classique', cardCount, cards: [{ id: '30th-c-001', localId: '001', name: 'Dracaufeu' }] },
-      'en/sets/30th-c': { id: '30th-c', name: 'Classic Collection', cardCount, cards: [{ id: '30th-c-001', localId: '001', name: 'Charizard' }] },
+      'fr/sets/30th-c': {
+        id: '30th-c',
+        name: 'Collection Classique',
+        cardCount,
+        cards: [{ id: '30th-c-001', localId: '001', name: 'Dracaufeu' }],
+      },
+      'en/sets/30th-c': {
+        id: '30th-c',
+        name: 'Classic Collection',
+        cardCount,
+        cards: [{ id: '30th-c-001', localId: '001', name: 'Charizard' }],
+      },
     });
 
     const { set, cards } = await fetchSet('fr', '30th-c');
@@ -146,7 +161,14 @@ describe('pictures from the bundled table', () => {
 
   it('replaces a logo TCGdex announces without having', async () => {
     mockApi({
-      'fr/sets/me05': { id: 'me05', name: 'Nuit Noire', logo: `${ASSETS}/fr/me/me05/logo`, symbol: `${ASSETS}/univ/me/me05/symbol`, cardCount, cards: [] },
+      'fr/sets/me05': {
+        id: 'me05',
+        name: 'Nuit Noire',
+        logo: `${ASSETS}/fr/me/me05/logo`,
+        symbol: `${ASSETS}/univ/me/me05/symbol`,
+        cardCount,
+        cards: [],
+      },
     });
 
     const { set } = await fetchSet('fr', 'me05');
@@ -157,11 +179,19 @@ describe('pictures from the bundled table', () => {
 
 describe('TCG Pocket', () => {
   it('leaves its sets out of the list', async () => {
-    mockApi({ 'en/sets': [{ id: 'A1', name: 'Genetic Apex', cardCount }, { id: 'sv01', name: 'Scarlet', cardCount }] });
+    mockApi({
+      'en/sets': [
+        { id: 'A1', name: 'Genetic Apex', cardCount },
+        { id: 'sv01', name: 'Scarlet', cardCount },
+      ],
+    });
 
     const sets = await fetchSets('en');
 
-    assert.deepEqual(sets.map((set) => set.id), ['sv01']);
+    assert.deepEqual(
+      sets.map((set) => set.id),
+      ['sv01'],
+    );
   });
 });
 
@@ -171,9 +201,18 @@ describe('cardImageUrl', () => {
   });
 
   it('finds the large picture of a table address', () => {
-    assert.equal(cardImageUrl('https://images.scrydex.com/pokemon/me55c-4/small', 'low'), 'https://images.scrydex.com/pokemon/me55c-4/small');
-    assert.equal(cardImageUrl('https://images.scrydex.com/pokemon/me55c-4/small', 'high'), 'https://images.scrydex.com/pokemon/me55c-4/large');
-    assert.equal(cardImageUrl('https://images.pokemontcg.io/sm35/1.png', 'high'), 'https://images.pokemontcg.io/sm35/1_hires.png');
+    assert.equal(
+      cardImageUrl('https://images.scrydex.com/pokemon/me55c-4/small', 'low'),
+      'https://images.scrydex.com/pokemon/me55c-4/small',
+    );
+    assert.equal(
+      cardImageUrl('https://images.scrydex.com/pokemon/me55c-4/small', 'high'),
+      'https://images.scrydex.com/pokemon/me55c-4/large',
+    );
+    assert.equal(
+      cardImageUrl('https://images.pokemontcg.io/sm35/1.png', 'high'),
+      'https://images.pokemontcg.io/sm35/1_hires.png',
+    );
   });
 });
 
@@ -197,7 +236,12 @@ const searchCatalog = {
     { id: 'old', name: 'Old', cardCount },
     { id: 'new', name: 'New', cardCount },
   ],
-  'en/sets/old': { id: 'old', name: 'Old', cardCount, cards: [{ id: 'old-2', localId: '2', name: 'Two', image: `${ASSETS}/en/x/old/2` }] },
+  'en/sets/old': {
+    id: 'old',
+    name: 'Old',
+    cardCount,
+    cards: [{ id: 'old-2', localId: '2', name: 'Two', image: `${ASSETS}/en/x/old/2` }],
+  },
 };
 
 describe('searchCards', () => {
@@ -207,7 +251,10 @@ describe('searchCards', () => {
     const { cards, total } = await searchCards('fr', 'salameche');
 
     assert.equal(total, 2);
-    assert.deepEqual(cards.map((card) => card.id), ['new-1', 'old-1']);
+    assert.deepEqual(
+      cards.map((card) => card.id),
+      ['new-1', 'old-1'],
+    );
     assert.equal(cards[0].setId, 'new');
   });
 
@@ -216,7 +263,10 @@ describe('searchCards', () => {
 
     const { cards } = await searchCards('fr', 'charmander');
 
-    assert.deepEqual(cards.map((card) => card.name), ['Salamèche', 'Salamèche']);
+    assert.deepEqual(
+      cards.map((card) => card.name),
+      ['Salamèche', 'Salamèche'],
+    );
   });
 
   it('narrows with the set name', async () => {
@@ -224,7 +274,10 @@ describe('searchCards', () => {
 
     const { cards } = await searchCards('fr', 'salameche ancienne');
 
-    assert.deepEqual(cards.map((card) => card.id), ['old-1']);
+    assert.deepEqual(
+      cards.map((card) => card.id),
+      ['old-1'],
+    );
   });
 
   it('finds nothing when no language knows the name', async () => {
@@ -275,5 +328,63 @@ describe('prices that belong to another card', () => {
     mockApi({ 'fr/cards/me06-084': pricedCard('084') });
     const { missingPrice } = await fetchCard('fr', 'me06-084');
     assert.equal(missingPrice, undefined);
+  });
+});
+
+describe('offline catalog', () => {
+  const sets = [{ id: 'a', name: 'A', cardCount }];
+
+  function memoryStore() {
+    const kept = new Map<string, unknown>();
+    keepResponsesIn({
+      read: async (request) => kept.get(request),
+      write: async (request, body) => void kept.set(request, body),
+    });
+    return kept;
+  }
+
+  const offline = () =>
+    mock.method(globalThis, 'fetch', async () => {
+      throw new TypeError('Network request failed');
+    });
+
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+  afterEach(() => keepResponsesIn(undefined));
+
+  it('keeps each answer and shows it again without a network', async () => {
+    const kept = memoryStore();
+    mockApi({ 'fr/sets': sets, 'en/sets': sets });
+    await fetchSets('fr');
+    await settle();
+    assert.deepEqual(kept.get('fr/sets'), sets);
+
+    mock.restoreAll();
+    offline();
+    const shown = await fetchSets('fr');
+    assert.deepEqual(
+      shown.map((shownSet) => shownSet.id),
+      ['a'],
+    );
+  });
+
+  it('uses what was kept when TCGdex fails', async () => {
+    const kept = memoryStore();
+    kept.set('fr/sets', sets);
+    mock.method(globalThis, 'fetch', async () => ({ ok: false, status: 503 }) as Response);
+    assert.equal((await fetchSets('fr')).length, 1);
+  });
+
+  it('does not hide a request that leads nowhere behind what was kept', async () => {
+    const kept = memoryStore();
+    kept.set('fr/cards/a-9', { id: 'a-9' });
+    mockApi({});
+    await assert.rejects(fetchCard('fr', 'a-9'));
+  });
+
+  it('fails offline when nothing was kept', async () => {
+    memoryStore();
+    offline();
+    await assert.rejects(fetchSets('fr'));
   });
 });

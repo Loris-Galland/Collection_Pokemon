@@ -9,7 +9,7 @@ import { useCard } from '@/features/catalog/hooks';
 import { PriceTrendCard } from '@/features/catalog/price-trend-card';
 import { AddCopyForm } from '@/features/collection/add-copy-form';
 import { CollectionNotice } from '@/features/collection/collection-notice';
-import { useCollectionStatus, useCopies } from '@/features/collection/collection-provider';
+import { useCopies } from '@/features/collection/collection-provider';
 import { CopyRow } from '@/features/collection/copy-row';
 import { WishButton } from '@/features/wishlist/wish-button';
 import { useWishlist } from '@/features/wishlist/wishlist-provider';
@@ -22,7 +22,6 @@ export default function CardScreen() {
   const { cardId } = useLocalSearchParams<{ cardId: string }>();
   const { data, error, retry } = useCard(cardId);
   const copies = useCopies();
-  const readOnly = useCollectionStatus() === 'read-only';
   const { obtainedCardIds } = useWishlist();
   const { toast, showToast } = useToast();
 
@@ -103,18 +102,16 @@ export default function CardScreen() {
           </View>
         )}
 
-        {!readOnly && (
-          <View style={styles.owned}>
-            <Text variant="title">{t('card.add')}</Text>
-            <AddCopyForm
-              key={card.id}
-              card={card}
-              onAdded={(quantity) =>
-                showToast(quantity > 1 ? t('card.addedMany', { count: quantity }) : t('card.addedOne'))
-              }
-            />
-          </View>
-        )}
+        <View style={styles.owned}>
+          <Text variant="title">{t('card.add')}</Text>
+          <AddCopyForm
+            key={card.id}
+            card={card}
+            onAdded={(quantity) =>
+              showToast(quantity > 1 ? t('card.addedMany', { count: quantity }) : t('card.addedOne'))
+            }
+          />
+        </View>
       </ScrollView>
       <Toast toast={toast} />
     </>

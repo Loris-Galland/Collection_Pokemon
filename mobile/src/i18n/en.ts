@@ -78,7 +78,8 @@ export const en: Translation = {
     unavailable: 'Search is unavailable for now.',
     noCard: 'No card has this name.',
     showMore: 'Show more',
-    limit: 'Only the first {{limit}} are shown. Add the set or the number to narrow it down, for example “Pikachu 151”.',
+    limit:
+      'Only the first {{limit}} are shown. Add the set or the number to narrow it down, for example “Pikachu 151”.',
   },
   set: {
     notFound: 'Set not found',
@@ -150,10 +151,10 @@ export const en: Translation = {
     unavailable: 'Collection unavailable',
     loadFailed: 'Your collection could not be loaded. Check your connection, then try again.',
     saveFailed: 'Your change could not be saved. Try again in a moment.',
-    saveOffline: 'No network, your change was not saved.',
     saveFull: 'Your collection has reached the limit of 10,000 copies.',
-    saveSignedOut: 'Your session has ended. Sign in again to change your collection.',
-    readOnly: 'Offline, your collection is read only. You can change it again as soon as the network is back.',
+    saveSignedOut: 'Your session has ended. Sign in again to send your changes, they are waiting on this phone.',
+    unsent_one: '{{count}} change is waiting for the network. It will be sent as soon as the network is back.',
+    unsent_other: '{{count}} changes are waiting for the network. They will be sent as soon as the network is back.',
     value: 'Collection value',
     valueChange: '{{change}} over 24 h (estimate)',
     valueNotice: 'Average Cardmarket prices, indicative only. They are not real sale prices.',
@@ -226,6 +227,28 @@ export const en: Translation = {
       'Unofficial app. Pokémon cards and their pictures belong to The Pokémon Company. Catalog data from TCGdex. Prices are indicative Cardmarket averages.',
     choose: 'Choose',
   },
+  offline: {
+    title: 'Offline',
+    intro:
+      'Your collection and wishes work without a network, and your changes are sent as soon as it is back. For the catalog, keep sets on the phone with their cards, pictures and the prices of the day.',
+    keptSummary_one: '{{count}} set kept, {{size}}',
+    keptSummary_other: '{{count}} sets kept, {{size}}',
+    nothingKept: 'No set kept yet.',
+    keepMine: 'Keep the sets of my collection',
+    keepAll: 'Keep the whole catalog',
+    keepAllHint: 'The whole catalog takes several hundred MB and a good hour. Start it on Wi-Fi and keep the app open.',
+    remove: 'Remove the kept catalog',
+    stop: 'Stop',
+    progress: 'Downloading {{name}}, {{done}} of {{total}}',
+    waiting_one: '{{count}} more set after this one.',
+    waiting_other: '{{count}} more sets after this one.',
+    failed_one: '{{count}} set could not be downloaded. Try again with a better connection.',
+    failed_other: '{{count}} sets could not be downloaded. Try again with a better connection.',
+    keepSet: 'Keep offline',
+    setWaiting: 'Waiting to download',
+    setKept: 'Available offline, prices of {{day}}',
+    refreshSet: 'Update',
+  },
   account: {
     myAccount: 'My account',
     signIn: 'Sign in',
@@ -264,7 +287,8 @@ export const en: Translation = {
     twoFactorDone: '✓ Two-step verification is on',
     backupCodesNotice:
       'Write these backup codes down somewhere safe. They let you sign in if you lose your phone, and they will not be shown again.',
-    addToAuthenticator: 'Add Holo to your authenticator app (Google Authenticator, Authy…), then enter the code it shows.',
+    addToAuthenticator:
+      'Add Holo to your authenticator app (Google Authenticator, Authy…), then enter the code it shows.',
     openAuthenticator: 'Open my app',
     copyKey: 'Or copy this key:',
     noAuthenticator: 'No authenticator app found. Install one, or copy the key below.',
@@ -326,9 +350,10 @@ export const en: Translation = {
     dataSecurity: 'Your security. The secret and the backup codes of two-step verification, encrypted.',
     dataSessions:
       'Your sign ins. The IP address of each session and the description of the device and app sent by your phone, along with the IP address of sign in attempts.',
-    dataCounters: 'Your requests. Counters tied to your account, which limit the number of requests to protect the service.',
+    dataCounters:
+      'Your requests. Counters tied to your account, which limit the number of requests to protect the service.',
     dataCollection:
-      'Your collection. Each copy (card, variant, language, condition, quantity) is kept on our server, so you find it on all your phones. A copy of it stays on your phone so you can browse it offline.',
+      'Your collection. Each copy (card, variant, language, condition, quantity) is kept on our server, so you find it on all your phones. A copy of it stays on your phone so you can use it offline, along with the changes not sent yet.',
     dataWishes: 'Your wishes. For now they stay on your phone and are not sent to us.',
     whyTitle: 'Why',
     why: 'To provide the service you ask for by creating an account (performance of a contract), and to protect accounts against fraudulent access (legitimate interest). We use no advertising, no data resale and no tracking tool.',

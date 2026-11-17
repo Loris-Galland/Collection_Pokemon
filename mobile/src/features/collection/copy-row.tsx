@@ -4,13 +4,12 @@ import { StyleSheet, View } from 'react-native';
 
 import { Stepper, Text, colors, radius, spacing } from '@/ui';
 
-import { useCollectionActions, useCollectionStatus } from './collection-provider';
+import { useCollectionActions } from './collection-provider';
 
 /** An owned copy with an editable quantity. Setting it to 0 removes the copy. */
 export function CopyRow({ copy }: { copy: Copy }) {
   const { t } = useTranslation();
   const { setQuantity } = useCollectionActions();
-  const readOnly = useCollectionStatus() === 'read-only';
   return (
     <View style={styles.row}>
       <View style={styles.body}>
@@ -19,7 +18,7 @@ export function CopyRow({ copy }: { copy: Copy }) {
           {t(`languages.${copy.language}`)} · {CONDITION_LABELS[copy.condition]}
         </Text>
       </View>
-      <Stepper value={copy.quantity} disabled={readOnly} onChange={(quantity) => setQuantity(copy.id, quantity)} />
+      <Stepper value={copy.quantity} onChange={(quantity) => setQuantity(copy.id, quantity)} />
     </View>
   );
 }

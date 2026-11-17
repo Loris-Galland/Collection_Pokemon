@@ -3,11 +3,26 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { keptImageUri } from '@/features/offline/catalog-files';
 import { CARD_ASPECT_RATIO, PokeballLoader, Text, colors, radius } from '@/ui';
 
 import { cardImageUrl, type ImageQuality } from './tcgdex';
 
 const LOADER_DELAY_MS = 150;
+
+/**
+ * The addresses to try in turn. A picture kept on the phone comes first. Without a large one kept, the large one comes
+ * from the network, and offline the small kept one is better than nothing.
+ */
+function imageCandidates(imageUrl: string | undefined, quality: ImageQuality): string[] {
+  const remote = cardImageUrl(imageUrl, quality);
+  if (!remote) return [];
+  const kept = keptImageUri(remote);
+  if (kept) return [kept];
+  const small = quality === 'high' ? cardImageUrl(imageUrl, 'low') : undefined;
+  const keptSmall = small && keptImageUri(small);
+  return keptSmall ? [remote, keptSmall] : [remote];
+}
 
 interface CardImageProps {
   imageUrl: string | undefined;
@@ -18,13 +33,14 @@ interface CardImageProps {
 
 /** Card preview, with a spinning Poké Ball while it loads and a placeholder when the image is missing. */
 export function CardImage({ imageUrl, quality, label, dimmed = false }: CardImageProps) {
-  const uri = cardImageUrl(imageUrl, quality);
   // Some addresses lead nowhere, and the name is better than an empty frame.
-  const [failedUri, setFailedUri] = useState<string>();
+  const [failedUris, setFailedUris] = useState<readonly string[]>([]);
   const [loadedUri, setLoadedUri] = useState<string>();
+  const uri = imageCandidates(imageUrl, quality).find((candidate) => !failedUris.includes(candidate));
+  const setFailedUri = (failed: string) => setFailedUris((current) => [...current, failed]);
   return (
     <View style={[styles.frame, dimmed && styles.dimmed]}>
-      {uri && uri !== failedUri ? (
+      {uri ? (
         <>
           {uri !== loadedUri && (
             // Shown after a short delay, so a picture already in the cache does not flash a loader.

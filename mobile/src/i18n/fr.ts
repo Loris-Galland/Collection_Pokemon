@@ -76,7 +76,8 @@ export const fr = {
     unavailable: 'Recherche indisponible pour le moment.',
     noCard: 'Aucune carte ne porte ce nom.',
     showMore: 'Afficher plus',
-    limit: 'Seuls les {{limit}} premiers s’affichent. Ajoute l’extension ou le numéro pour affiner, par exemple « Pikachu 151 ».',
+    limit:
+      'Seuls les {{limit}} premiers s’affichent. Ajoute l’extension ou le numéro pour affiner, par exemple « Pikachu 151 ».',
   },
   set: {
     notFound: 'Extension introuvable',
@@ -96,7 +97,8 @@ export const fr = {
     indicativePrice: 'Prix indicatif Cardmarket',
     variantsExplained:
       'Normale, holo et reverse désignent l’impression de la carte, pas son état. Chaque prix est la moyenne des ventes des 7 derniers jours, tous états confondus.',
-    sharedShinyPrice: 'Cardmarket ne donne qu’un prix pour les versions brillantes : holo et reverse affichent le même.',
+    sharedShinyPrice:
+      'Cardmarket ne donne qu’un prix pour les versions brillantes : holo et reverse affichent le même.',
     myCopies: 'Mes exemplaires',
     add: 'Ajouter',
     addedOne: 'Ajoutée à ta collection',
@@ -148,10 +150,11 @@ export const fr = {
     unavailable: 'Collection indisponible',
     loadFailed: 'Ta collection n’a pas pu être chargée. Vérifie ta connexion, puis réessaie.',
     saveFailed: 'Ta modification n’a pas pu être enregistrée. Réessaie dans un instant.',
-    saveOffline: 'Pas de réseau, ta modification n’a pas été enregistrée.',
     saveFull: 'Ta collection a atteint la limite de 10 000 exemplaires.',
-    saveSignedOut: 'Ta session a expiré. Reconnecte-toi pour modifier ta collection.',
-    readOnly: 'Hors connexion, ta collection est en consultation seule. Tu pourras la modifier dès que le réseau reviendra.',
+    saveSignedOut:
+      'Ta session a expiré. Reconnecte-toi pour envoyer tes modifications, elles t’attendent sur ce téléphone.',
+    unsent_one: '{{count}} modification attend le réseau. Elle partira toute seule dès qu’il reviendra.',
+    unsent_other: '{{count}} modifications attendent le réseau. Elles partiront toutes seules dès qu’il reviendra.',
     value: 'Valeur de la collection',
     valueChange: '{{change}} sur 24 h (estimation)',
     valueNotice: 'Prix moyens Cardmarket, indicatifs : ce ne sont pas des prix de vente réels.',
@@ -223,6 +226,29 @@ export const fr = {
     aboutText:
       'Application non officielle. Les cartes Pokémon et leurs images appartiennent à The Pokémon Company. Données du catalogue : TCGdex. Prix : moyennes Cardmarket, indicatives.',
     choose: 'Choisir',
+  },
+  offline: {
+    title: 'Hors connexion',
+    intro:
+      'Ta collection et tes envies marchent sans réseau, et tes modifications partent dès qu’il revient. Pour le catalogue, garde des extensions sur le téléphone avec leurs cartes, leurs images et les prix du jour.',
+    keptSummary_one: '{{count}} extension gardée, {{size}}',
+    keptSummary_other: '{{count}} extensions gardées, {{size}}',
+    nothingKept: 'Aucune extension gardée pour l’instant.',
+    keepMine: 'Garder les extensions de ma collection',
+    keepAll: 'Garder tout le catalogue',
+    keepAllHint:
+      'Tout le catalogue pèse plusieurs centaines de Mo et prend une bonne heure. Lance-le en Wi-Fi, l’application ouverte.',
+    remove: 'Supprimer le catalogue gardé',
+    stop: 'Arrêter',
+    progress: 'Téléchargement de {{name}}, {{done}} sur {{total}}',
+    waiting_one: 'Encore {{count}} extension après celle-ci.',
+    waiting_other: 'Encore {{count}} extensions après celle-ci.',
+    failed_one: '{{count}} extension n’a pas pu être téléchargée. Réessaie avec une meilleure connexion.',
+    failed_other: '{{count}} extensions n’ont pas pu être téléchargées. Réessaie avec une meilleure connexion.',
+    keepSet: 'Garder hors connexion',
+    setWaiting: 'En attente de téléchargement',
+    setKept: 'Disponible hors connexion, prix du {{day}}',
+    refreshSet: 'Mettre à jour',
   },
   account: {
     myAccount: 'Mon compte',
@@ -323,13 +349,14 @@ export const fr = {
       'Ton compte : e-mail, pseudo et mot de passe haché (il n’est jamais conservé en clair), ou ton nom, ton e-mail, ton identifiant Google et l’adresse de ta photo Google si tu utilises Google.',
     dataPhoto:
       'Ta photo de profil, si tu en ajoutes une : une version réduite, sans ses métadonnées, conservée sur notre serveur et visible seulement par toi.',
-    dataSecurity: 'Ta sécurité : le secret et les codes de secours de la validation en deux étapes, sous forme chiffrée.',
+    dataSecurity:
+      'Ta sécurité : le secret et les codes de secours de la validation en deux étapes, sous forme chiffrée.',
     dataSessions:
       'Tes connexions : l’adresse IP de chaque session et la description de l’appareil et de l’application envoyée par ton téléphone, ainsi que l’adresse IP des tentatives de connexion.',
     dataCounters:
       'Tes requêtes : des compteurs liés à ton compte, qui limitent le nombre de requêtes pour protéger le service.',
     dataCollection:
-      'Ta collection : chaque exemplaire (carte, variante, langue, état, quantité) est conservé sur notre serveur, pour que tu le retrouves sur tous tes téléphones. Une copie reste sur ton téléphone pour la consultation hors connexion.',
+      'Ta collection : chaque exemplaire (carte, variante, langue, état, quantité) est conservé sur notre serveur, pour que tu le retrouves sur tous tes téléphones. Une copie reste sur ton téléphone pour que tu puisses l’utiliser hors connexion, avec les modifications pas encore envoyées.',
     dataWishes: 'Tes envies : elles restent pour l’instant sur ton téléphone et ne nous sont pas envoyées.',
     whyTitle: 'Pourquoi',
     why: 'Pour te fournir le service que tu demandes en créant un compte (exécution du contrat), et pour protéger les comptes contre les accès frauduleux (intérêt légitime). Nous n’utilisons ni publicité, ni revente, ni outil de suivi.',

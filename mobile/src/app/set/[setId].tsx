@@ -9,9 +9,11 @@ import { useRequireAccount } from '@/features/account/use-account';
 import { CardTile } from '@/features/catalog/card-tile';
 import { useSet } from '@/features/catalog/hooks';
 import { BulkAddPanel } from '@/features/collection/bulk-add-panel';
-import { useCollectionStatus, useCopies, useOwnedQuantities } from '@/features/collection/collection-provider';
+import { useCopies, useOwnedQuantities } from '@/features/collection/collection-provider';
 import { useWishPicker } from '@/features/wishlist/wish-picker';
 import { useWishlist } from '@/features/wishlist/wishlist-provider';
+import { keptOrRemote } from '@/features/offline/catalog-files';
+import { OfflineSetButton } from '@/features/offline/offline-set-button';
 import { formatPercent } from '@/lib/format';
 import { Button, ProgressBar, StateView, Text, Toast, colors, spacing, useToast } from '@/ui';
 
@@ -26,7 +28,6 @@ export default function SetScreen() {
   const { data, error, retry } = useSet(setId);
   const copies = useCopies();
   const owned = useOwnedQuantities();
-  const readOnly = useCollectionStatus() === 'read-only';
   const requireAccount = useRequireAccount();
   const { wishes } = useWishlist();
   const { toggle: toggleWish, choose: chooseWishlist } = useWishPicker();
@@ -96,7 +97,9 @@ export default function SetScreen() {
         columnWrapperStyle={styles.row}
         ListHeaderComponent={
           <View style={styles.header}>
-            {set.logoUrl && <Image source={{ uri: set.logoUrl }} style={styles.logo} contentFit="contain" />}
+            {set.logoUrl && (
+              <Image source={{ uri: keptOrRemote(set.logoUrl) }} style={styles.logo} contentFit="contain" />
+            )}
             <View style={styles.progressLine}>
               <Text variant="heading">
                 {progress.owned}/{progress.total}
@@ -106,8 +109,11 @@ export default function SetScreen() {
               </Text>
             </View>
             <ProgressBar ratio={progress.ratio} />
-            {!readOnly && !selecting && (
-              <Button label={t('set.addSeveral')} variant="secondary" onPress={() => startSelecting()} />
+            {!selecting && (
+              <>
+                <Button label={t('set.addSeveral')} variant="secondary" onPress={() => startSelecting()} />
+                <OfflineSetButton set={set} />
+              </>
             )}
           </View>
         }
@@ -119,7 +125,7 @@ export default function SetScreen() {
               selecting={selecting}
               selected={selectedIds.has(item.id)}
               onToggleSelected={toggleSelected}
-              onStartSelecting={readOnly ? undefined : startSelecting}
+              onStartSelecting={startSelecting}
               wished={wishedIds.has(item.id)}
               onToggleWish={toggleWish}
               onChooseWishlist={chooseWishlist}
@@ -131,11 +137,16 @@ export default function SetScreen() {
         <BulkAddPanel
           selected={selectedCards}
           onCancel={stopSelecting}
-          onSelectMissing={() => setSelectedIds(new Set(cards.filter((card) => !owned.has(card.id)).map((card) => card.id)))}
+          onSelectMissing={() =>
+            setSelectedIds(new Set(cards.filter((card) => !owned.has(card.id)).map((card) => card.id)))
+          }
           onDone={(addedCount, failedIds) => {
             showToast(
               failedIds.length > 0
-                ? t('set.addedWithFailures', { count: addedCount, failed: t('common.cards', { count: failedIds.length }) })
+                ? t('set.addedWithFailures', {
+                    count: addedCount,
+                    failed: t('common.cards', { count: failedIds.length }),
+                  })
                 : t('set.added', { count: addedCount }),
             );
             if (failedIds.length > 0) setSelectedIds(new Set(failedIds));

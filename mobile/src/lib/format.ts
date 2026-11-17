@@ -33,3 +33,16 @@ export function formatPercent(ratio: number): string {
   const percent = Math.round(ratio * 100);
   return numberLocale() === 'fr-FR' ? `${percent} %` : `${percent}%`;
 }
+
+/** Formats a size on the phone, for example "12 Mo" in French or "12 MB" in English. */
+export function formatSize(bytes: number): string {
+  const megabytes = bytes / 1_000_000;
+  const shown = megabytes < 10 ? Math.round(megabytes * 10) / 10 : Math.round(megabytes);
+  const number = new Intl.NumberFormat(numberLocale()).format(shown);
+  return numberLocale() === 'fr-FR' ? `${number} Mo` : `${number} MB`;
+}
+
+/** Formats a day, for example "17 novembre" in French or "November 17" in English. */
+export function formatDay(isoDate: string): string {
+  return new Intl.DateTimeFormat(numberLocale(), { day: 'numeric', month: 'long' }).format(new Date(isoDate));
+}

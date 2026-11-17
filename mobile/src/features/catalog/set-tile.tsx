@@ -5,6 +5,7 @@ import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
+import { keptOrRemote } from '@/features/offline/catalog-files';
 import { PressableScale, ProgressBar, Text, gradientStyle, radius, spacing } from '@/ui';
 
 import { setThemeOf } from './set-theme';
@@ -38,7 +39,7 @@ export const SetTile = memo(
         <View style={styles.logoArea}>
           {set.logoUrl && !logoFailed ? (
             <Image
-              source={{ uri: set.logoUrl }}
+              source={{ uri: keptOrRemote(set.logoUrl) }}
               style={styles.logo}
               onError={() => setLogoFailed(true)}
               contentFit="contain"

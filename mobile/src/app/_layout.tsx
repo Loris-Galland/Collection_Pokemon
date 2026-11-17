@@ -6,13 +6,18 @@ import { useTranslation } from 'react-i18next';
 
 import '@/i18n';
 
+import { keepResponsesIn } from '@/features/catalog/tcgdex';
 import { CollectionProvider } from '@/features/collection/collection-provider';
+import { OFFLINE_FILES_AVAILABLE, responseFiles } from '@/features/offline/catalog-files';
 import { WishPickerProvider } from '@/features/wishlist/wish-picker';
 import { WishlistProvider } from '@/features/wishlist/wishlist-provider';
 import { SettingsProvider } from '@/features/settings/settings-provider';
 import { colors } from '@/ui';
 
 SplashScreen.preventAutoHideAsync();
+
+// The catalog keeps each answer of TCGdex, so it opens without a network.
+keepResponsesIn(OFFLINE_FILES_AVAILABLE ? responseFiles : undefined);
 
 const navigationTheme = {
   ...DarkTheme,
@@ -40,23 +45,23 @@ export default function RootLayout() {
         <CollectionProvider>
           <WishlistProvider>
             <WishPickerProvider>
-            <Stack
-              screenOptions={{
-                headerTintColor: colors.text,
-                headerStyle: { backgroundColor: colors.background },
-                headerShadowVisible: false,
-                headerBackButtonDisplayMode: 'minimal',
-                contentStyle: { backgroundColor: colors.background },
-              }}>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="set/[setId]" options={{ title: '' }} />
-              <Stack.Screen name="card/[cardId]" options={{ title: '' }} />
-              <Stack.Screen name="sign-in" options={{ title: '', presentation: 'modal' }} />
-              <Stack.Screen name="two-factor" options={{ title: '', presentation: 'modal' }} />
-              <Stack.Screen name="account/security" options={{ title: t('account.myAccount') }} />
-              <Stack.Screen name="wishlists/[wishlistId]" options={{ title: '' }} />
-              <Stack.Screen name="privacy" options={{ title: '' }} />
-            </Stack>
+              <Stack
+                screenOptions={{
+                  headerTintColor: colors.text,
+                  headerStyle: { backgroundColor: colors.background },
+                  headerShadowVisible: false,
+                  headerBackButtonDisplayMode: 'minimal',
+                  contentStyle: { backgroundColor: colors.background },
+                }}>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="set/[setId]" options={{ title: '' }} />
+                <Stack.Screen name="card/[cardId]" options={{ title: '' }} />
+                <Stack.Screen name="sign-in" options={{ title: '', presentation: 'modal' }} />
+                <Stack.Screen name="two-factor" options={{ title: '', presentation: 'modal' }} />
+                <Stack.Screen name="account/security" options={{ title: t('account.myAccount') }} />
+                <Stack.Screen name="wishlists/[wishlistId]" options={{ title: '' }} />
+                <Stack.Screen name="privacy" options={{ title: '' }} />
+              </Stack>
             </WishPickerProvider>
           </WishlistProvider>
         </CollectionProvider>

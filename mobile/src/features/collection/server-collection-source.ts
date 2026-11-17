@@ -2,48 +2,71 @@ import {
   MAX_ENTRIES_PER_CHANGE,
   MAX_ID_LENGTH,
   applyCollectionChange,
+  isChangeId,
+  isCollectionChange,
   isCopy,
   type CollectionChange,
   type Copy,
 } from '@collection/shared';
 
-import { CollectionSourceError, type CollectionSource, type SaveFailure } from './collection-source.ts';
+import {
+  CollectionSourceError,
+  type CollectionSource,
+  type SaveFailure,
+  type SyncReport,
+} from './collection-source.ts';
 
-/** Copies saved on the phone under one key. `read` gives undefined when nothing is saved there. */
-export interface StoredCopies {
-  read(): Promise<Copy[] | undefined>;
-  write(copies: readonly Copy[]): Promise<void>;
+/** A value saved on the phone under one key. `read` gives undefined when nothing is saved there. */
+export interface Stored<T> {
+  read(): Promise<T | undefined>;
+  write(value: T): Promise<void>;
   remove(): Promise<void>;
 }
+
+export type StoredCopies = Stored<readonly Copy[]>;
+
+/** A change kept on the phone until the server has it. Its id stays the same however many times it is sent. */
+export interface QueuedChange {
+  changeId: string;
+  change: CollectionChange;
+}
+
+export type StoredChanges = Stored<readonly QueuedChange[]>;
+
+/** Keeps the valid changes only, so one corrupted entry does not cost the others. */
+export const restoreQueuedChanges = (value: unknown): QueuedChange[] | undefined =>
+  Array.isArray(value)
+    ? value.filter(
+        (entry): entry is QueuedChange =>
+          typeof entry === 'object' && entry !== null && isChangeId(entry.changeId) && isCollectionChange(entry.change),
+      )
+    : undefined;
 
 /** Sends one request to the collection route of the server. Rejects when the server cannot be reached. */
 export type CollectionRequest = (request: { method: 'GET' } | { method: 'POST'; body: unknown }) => Promise<Response>;
 
 export interface ServerCollectionSourceOptions {
   request: CollectionRequest;
-  /** The collection last read from the server, shown when it cannot be reached. */
+  /** The collection as last shown, changes not yet sent included. It is shown when the server cannot be reached. */
   cache: StoredCopies;
   /** What the account saved on this phone before its collection moved to the server. It is sent once. */
   local: StoredCopies;
+  /** The changes made while the server could not be reached. */
+  outbox: StoredChanges;
   newChangeId: () => string;
-  wait?: (ms: number) => Promise<void>;
 }
 
-/** Pauses between the tries of a change the server did not answer. */
-export const RETRY_DELAYS_MS = [1000, 3000];
+/** The server could not be reached or failed, so the change waits on the phone. */
+type Sent = 'sent' | 'unreachable' | SaveFailure;
 
-const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-async function failureOf(response: Response): Promise<SaveFailure> {
+async function refusalOf(response: Response): Promise<SaveFailure> {
   if (response.status === 401) return 'signed-out';
   if (response.status !== 409) return 'other';
   const body = (await response.json().catch(() => undefined)) as { error?: unknown } | undefined;
   return body?.error === 'collection_full' ? 'full' : 'other';
 }
 
-interface UploadBatch {
-  changeId: string;
-  change: CollectionChange;
+interface UploadBatch extends QueuedChange {
   /** The copies still to send once this batch has arrived. */
   rest: Copy[];
 }
@@ -66,44 +89,80 @@ function uploadBatches(copies: readonly Copy[]): UploadBatch[] {
   return batches;
 }
 
+const warn = (what: string) => (error: unknown) => console.warn(`Could not ${what}`, error);
+
 /**
- * The collection of a signed in account, kept on our server. Each change carries an id, so a change the server did not
- * answer can be sent again without counting twice. When the server cannot be reached, the last collection read from it
- * is shown read-only.
+ * The collection of a signed in account, kept on our server. A change is first kept on the phone with its own id,
+ * then sent. Without a network it waits there and leaves when the server can be reached again. The server applies an
+ * id only once, so sending a change again is harmless.
  */
 export function createServerCollectionSource(options: ServerCollectionSourceOptions): CollectionSource {
-  const { request, cache, local, newChangeId, wait = pause } = options;
+  const { request, cache, local, outbox, newChangeId } = options;
   let current: Copy[] = [];
+  let queued: QueuedChange[] = [];
+  let refused: SaveFailure | undefined;
+  let draining: Promise<void> | undefined;
+  let writes = Promise.resolve();
 
-  /** Sends a change, trying again while the server cannot be reached or fails. A refusal is never tried again. */
-  async function send(changeId: string, change: CollectionChange): Promise<void> {
-    for (let attempt = 0; ; attempt++) {
-      let failure: SaveFailure;
-      let canRetry: boolean;
-      try {
-        const response = await request({ method: 'POST', body: { changeId, change } });
-        if (response.ok) return;
-        failure = await failureOf(response);
-        canRetry = response.status >= 500;
-      } catch {
-        failure = 'offline';
-        canRetry = true;
-      }
-      const delay = RETRY_DELAYS_MS[attempt];
-      if (!canRetry || delay === undefined) throw new CollectionSourceError(failure);
-      await wait(delay);
+  /** Saves the queue as it is when the write starts, so writes that overlap never bring back an old queue. */
+  function persistQueue(): Promise<void> {
+    const write = writes.then(() => outbox.write(queued));
+    writes = write.catch(() => undefined);
+    return write;
+  }
+
+  async function send({ changeId, change }: QueuedChange): Promise<Sent> {
+    let response: Response;
+    try {
+      response = await request({ method: 'POST', body: { changeId, change } });
+    } catch {
+      return 'unreachable';
     }
+    if (response.ok) return 'sent';
+    // A server that fails will most likely accept the change later.
+    if (response.status >= 500) return 'unreachable';
+    return refusalOf(response);
   }
 
   /** Sends what the account saved on this phone before. Each batch leaves the phone once the server has it. */
-  async function sendLocalCollection(): Promise<void> {
+  async function sendLocalCollection(): Promise<boolean> {
     const saved = await local.read();
-    if (!saved) return;
-    for (const { changeId, change, rest } of uploadBatches(saved)) {
-      await send(changeId, change);
-      await (rest.length > 0 ? local.write(rest) : local.remove());
+    if (!saved) return true;
+    for (const batch of uploadBatches(saved)) {
+      const result = await send(batch);
+      if (result !== 'sent') return false;
+      await (batch.rest.length > 0 ? local.write(batch.rest) : local.remove());
     }
     if (saved.length === 0) await local.remove();
+    return true;
+  }
+
+  /** Sends the queued changes in order, and stops at the first one the server cannot take yet. */
+  async function drainQueue(): Promise<void> {
+    // The old collection goes first, since a queued change may be about one of its copies.
+    if (!(await sendLocalCollection())) return;
+    for (let next = queued[0]; next; next = queued[0]) {
+      const result = await send(next);
+      if (result === 'unreachable') return;
+      // The session has ended. The change waits for the account to sign in again on this phone.
+      if (result === 'signed-out') {
+        refused = result;
+        return;
+      }
+      if (result !== 'sent') refused = result;
+      queued = queued.filter((entry) => entry !== next);
+      await persistQueue();
+    }
+  }
+
+  /** Several callers share one run, so a change is never sent twice at the same time. */
+  function drain(): Promise<void> {
+    draining ??= drainQueue()
+      .catch(warn('send the changes made offline'))
+      .finally(() => {
+        draining = undefined;
+      });
+    return draining;
   }
 
   async function readServer(): Promise<Copy[]> {
@@ -119,25 +178,41 @@ export function createServerCollectionSource(options: ServerCollectionSourceOpti
     return body.copies.filter(isCopy);
   }
 
+  const keepForOffline = () => cache.write(current).catch(warn('keep the collection for offline use'));
+
   return {
     async load() {
+      queued = [...((await outbox.read()) ?? [])];
+      await drain();
       try {
-        // What is left is sent again at the next start, and the server reads it as the same change.
-        await sendLocalCollection().catch((error) => console.warn('Could not send the collection of this phone', error));
-        current = await readServer();
-        cache.write(current).catch((error) => console.warn('Could not keep the collection for offline use', error));
-        return { copies: current, readOnly: false };
+        // What the server has, plus what it does not have yet.
+        current = queued.reduce((copies, entry) => applyCollectionChange(copies, entry.change), await readServer());
+        keepForOffline();
       } catch (error) {
         const known = (await cache.read()) ?? (await local.read());
         if (!known) throw error;
-        current = known;
-        return { copies: known, readOnly: true };
+        current = [...known];
       }
+      return { copies: current };
     },
     async apply(change) {
-      await send(newChangeId(), change);
+      const entry: QueuedChange = { changeId: newChangeId(), change };
+      queued = [...queued, entry];
+      try {
+        await persistQueue();
+      } catch (error) {
+        // Without the queue the change would be lost when the app closes, so it is not accepted at all.
+        queued = queued.filter((queuedEntry) => queuedEntry !== entry);
+        throw new CollectionSourceError('other', { cause: error });
+      }
       current = applyCollectionChange(current, change);
-      cache.write(current).catch((error) => console.warn('Could not keep the collection for offline use', error));
+      keepForOffline();
+    },
+    async sync(): Promise<SyncReport> {
+      await drain();
+      const report: SyncReport = { unsentCount: queued.length, refused };
+      refused = undefined;
+      return report;
     },
   };
 }

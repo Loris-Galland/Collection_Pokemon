@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { authClient } from '@/features/account/auth-client';
 import { ProfileButton } from '@/features/account/profile-button';
 import { useAccount } from '@/features/account/use-account';
+import { OfflineSection } from '@/features/offline/offline-section';
 import { useSettings, type AppLanguageChoice } from '@/features/settings/settings-provider';
 import { APP_LANGUAGES } from '@/i18n';
 import { Button, SelectField, Text, WEB_TAB_BAR_OFFSET, colors, radius, spacing } from '@/ui';
@@ -87,6 +88,10 @@ export default function SettingsScreen() {
           <Text variant="caption" tone="faint">
             {t('settings.catalogLanguageHint')}
           </Text>
+        </View>
+
+        <View style={styles.section}>
+          <OfflineSection />
         </View>
 
         <View style={styles.section}>
