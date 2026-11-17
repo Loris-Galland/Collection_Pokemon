@@ -31,6 +31,7 @@ export const en: Translation = {
   tabs: {
     catalog: 'Catalog',
     collection: 'Collection',
+    scan: 'Scan',
     wishlist: 'Wishes',
     settings: 'Settings',
   },
@@ -227,6 +228,26 @@ export const en: Translation = {
       'Unofficial app. Pokémon cards and their pictures belong to The Pokémon Company. Catalog data from TCGdex. Prices are indicative Cardmarket averages.',
     choose: 'Choose',
   },
+  scan: {
+    title: 'Scan',
+    intro: 'Frame your card with its number at the bottom, then take the photo. You get its page and price, and can add it to your collection.',
+    introTyping:
+      'Type the number printed at the bottom of your card to find its page and price. Reading a photo comes with the development build of the app.',
+    permission: 'Allow the camera to scan your cards. The photo stays on your phone.',
+    allowCamera: 'Allow the camera',
+    numberHere: 'The number here, for example 006/165',
+    takePhoto: 'Take the photo',
+    reading: 'Reading the card…',
+    choose_one: '{{count}} possible card',
+    choose_other: '{{count}} possible cards, pick yours',
+    notFound: {
+      'no-number': 'No readable number. Move closer, avoid glare, or type the number like 006/165.',
+      'no-card': 'No card in the catalog has this number. Check it, or search the card by name in the Catalog.',
+      failed: 'The card could not be read. Try again, or type its number.',
+    },
+    typeNumber: 'Card number',
+    find: 'Find the card',
+  },
   offline: {
     title: 'Offline',
     intro:
@@ -347,6 +368,8 @@ export const en: Translation = {
       'Your account. Email, username and hashed password (it is never kept in clear text), or your name, your email, your Google id and the address of your Google picture if you use Google.',
     dataPhoto:
       'Your profile picture, if you add one. A reduced version without its metadata, kept on our server and visible only to you.',
+    dataScan:
+      'Scan photos are read on your phone to find the number of the card, then forgotten. They are never sent or kept.',
     dataSecurity: 'Your security. The secret and the backup codes of two-step verification, encrypted.',
     dataSessions:
       'Your sign ins. The IP address of each session and the description of the device and app sent by your phone, along with the IP address of sign in attempts.',

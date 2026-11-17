@@ -40,8 +40,17 @@
         "expo-image-picker",
         {
           "photosPermission": "Holo accède à la photo que tu choisis pour ton profil.",
-          "cameraPermission": false,
+          "cameraPermission": "Holo utilise l’appareil photo pour lire le numéro de tes cartes quand tu les scannes. La photo reste sur ton téléphone.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Holo utilise l’appareil photo pour lire le numéro de tes cartes quand tu les scannes. La photo reste sur ton téléphone.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
         }
       ],
       [

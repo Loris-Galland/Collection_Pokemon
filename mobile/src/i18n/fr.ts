@@ -29,6 +29,7 @@ export const fr = {
   tabs: {
     catalog: 'Catalogue',
     collection: 'Collection',
+    scan: 'Scanner',
     wishlist: 'Envies',
     settings: 'Réglages',
   },
@@ -227,6 +228,26 @@ export const fr = {
       'Application non officielle. Les cartes Pokémon et leurs images appartiennent à The Pokémon Company. Données du catalogue : TCGdex. Prix : moyennes Cardmarket, indicatives.',
     choose: 'Choisir',
   },
+  scan: {
+    title: 'Scanner',
+    intro: 'Cadre ta carte avec son numéro en bas, puis prends la photo. Tu retrouves sa fiche, son prix et tu peux l’ajouter à ta collection.',
+    introTyping:
+      'Tape le numéro imprimé en bas de ta carte pour retrouver sa fiche et son prix. La lecture par photo arrive avec la version de développement de l’application.',
+    permission: 'Autorise l’appareil photo pour scanner tes cartes. La photo reste sur ton téléphone.',
+    allowCamera: 'Autoriser l’appareil photo',
+    numberHere: 'Le numéro ici, par exemple 006/165',
+    takePhoto: 'Prendre la photo',
+    reading: 'Lecture de la carte…',
+    choose_one: '{{count}} carte possible',
+    choose_other: '{{count}} cartes possibles, choisis la tienne',
+    notFound: {
+      'no-number': 'Aucun numéro lisible. Rapproche-toi, évite les reflets, ou tape le numéro comme 006/165.',
+      'no-card': 'Aucune carte du catalogue ne porte ce numéro. Vérifie-le, ou cherche la carte par son nom dans le Catalogue.',
+      failed: 'La carte n’a pas pu être lue. Réessaie, ou tape son numéro.',
+    },
+    typeNumber: 'Numéro de la carte',
+    find: 'Trouver la carte',
+  },
   offline: {
     title: 'Hors connexion',
     intro:
@@ -349,6 +370,8 @@ export const fr = {
       'Ton compte : e-mail, pseudo et mot de passe haché (il n’est jamais conservé en clair), ou ton nom, ton e-mail, ton identifiant Google et l’adresse de ta photo Google si tu utilises Google.',
     dataPhoto:
       'Ta photo de profil, si tu en ajoutes une : une version réduite, sans ses métadonnées, conservée sur notre serveur et visible seulement par toi.',
+    dataScan:
+      'Les photos du scan : elles sont lues sur ton téléphone pour trouver le numéro de la carte, puis oubliées. Elles ne sont ni envoyées ni conservées.',
     dataSecurity:
       'Ta sécurité : le secret et les codes de secours de la validation en deux étapes, sous forme chiffrée.',
     dataSessions:

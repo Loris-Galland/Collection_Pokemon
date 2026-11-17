@@ -35,6 +35,7 @@ export default function PrivacyScreen() {
       <Section title={t('privacy.dataTitle')}>
         <Paragraph>{t('privacy.dataAccount')}</Paragraph>
         <Paragraph>{t('privacy.dataPhoto')}</Paragraph>
+        <Paragraph>{t('privacy.dataScan')}</Paragraph>
         <Paragraph>{t('privacy.dataSecurity')}</Paragraph>
         <Paragraph>{t('privacy.dataSessions')}</Paragraph>
         <Paragraph>{t('privacy.dataCounters')}</Paragraph>

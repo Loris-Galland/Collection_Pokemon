@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { colors } from '@/ui';
 
-/** Bottom tab bar with Catalog, Collection, Wishlist and Settings. */
+/** Bottom tab bar with Catalog, Collection, Scan, Wishlist and Settings. */
 export default function TabsLayout() {
   const { t } = useTranslation();
   return (
@@ -19,6 +19,10 @@ export default function TabsLayout() {
       <NativeTabs.Trigger name="collection">
         <NativeTabs.Trigger.Label>{t('tabs.collection')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="rectangle.stack.fill" md="style" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="scan">
+        <NativeTabs.Trigger.Label>{t('tabs.scan')}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="camera.viewfinder" md="photo_camera" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="wishlist">
         <NativeTabs.Trigger.Label>{t('tabs.wishlist')}</NativeTabs.Trigger.Label>
