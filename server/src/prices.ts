@@ -1,36 +1,14 @@
 import {
   hasUnreliablePrice,
+  mapLimited,
   readCardmarketPrices,
   variantsOf,
   type CardmarketPricing,
   type TcgdexVariants,
-  type ValueSnapshot,
-  type Variant,
 } from '@collection/shared/compiled';
 import type { AnyBulkWriteOperation } from 'mongodb';
 
-import { copies } from './copies.js';
-import { db } from './db.js';
-
-/** The price of a card in one variant, as read from TCGdex on a given day. */
-interface PriceDocument {
-  cardId: string;
-  variant: Variant;
-  amount: number;
-  updatedAt: Date;
-}
-
-/** When the prices of a card were last read, priced or not, so the oldest ones are read first. */
-interface PriceCheckDocument {
-  _id: string;
-  checkedAt: Date;
-}
-
-type SnapshotDocument = ValueSnapshot;
-
-export const prices = () => db.collection<PriceDocument>('price');
-const priceChecks = () => db.collection<PriceCheckDocument>('priceCheck');
-export const valueSnapshots = () => db.collection<SnapshotDocument>('valueSnapshot');
+import { copies, priceChecks, prices, valueSnapshots, type PriceDocument } from './collections.js';
 
 // Prices are the same in every language, and English is the most complete one on TCGdex.
 const TCGDEX_CARD_URL = 'https://api.tcgdex.net/v2/en/cards/';
@@ -96,31 +74,36 @@ async function refreshCard(cardId: string, now: Date): Promise<void> {
  * left for the next day keep their last known prices.
  */
 export async function refreshOwnedPrices(
+  owned: readonly string[],
   deadline: number,
   now = new Date(),
 ): Promise<{ read: number; failed: number; left: number }> {
   await ensureIndexes();
-  const owned = (await copies().distinct('cardId')) as string[];
   const checks = await priceChecks()
-    .find({ _id: { $in: owned } })
+    .find({ _id: { $in: [...owned] } })
     .toArray();
   const checkedAt = new Map(checks.map((check) => [check._id, check.checkedAt.getTime()]));
-  const queue = [...owned].sort((a, b) => (checkedAt.get(a) ?? 0) - (checkedAt.get(b) ?? 0));
-  let read = 0;
-  let failed = 0;
-  const worker = async () => {
-    for (let cardId = queue.shift(); cardId !== undefined && Date.now() < deadline; cardId = queue.shift()) {
-      try {
-        await refreshCard(cardId, now);
-        read += 1;
-      } catch (error) {
-        console.warn(`Could not read the prices of ${cardId}`, error);
-        failed += 1;
-      }
-    }
+  const oldestFirst = [...owned].sort((a, b) => (checkedAt.get(a) ?? 0) - (checkedAt.get(b) ?? 0));
+  const results = await mapLimited(oldestFirst, PARALLEL_REQUESTS, async (cardId) => {
+    if (Date.now() >= deadline) return 'left' as const;
+    await refreshCard(cardId, now);
+    return 'read' as const;
+  });
+  const count = (outcome: 'read' | 'left') =>
+    results.filter((result) => result.status === 'fulfilled' && result.value === outcome).length;
+  for (const result of results) {
+    if (result.status === 'rejected') console.warn('Could not read the prices of a card', result.reason);
+  }
+  return {
+    read: count('read'),
+    failed: results.filter((result) => result.status === 'rejected').length,
+    left: count('left'),
   };
-  await Promise.all(Array.from({ length: PARALLEL_REQUESTS }, worker));
-  return { read, failed, left: queue.length };
+}
+
+/** Every card someone owns. */
+export async function ownedCardIds(): Promise<string[]> {
+  return (await copies().distinct('cardId')) as string[];
 }
 
 /** The day of a date in Paris, formatted as YYYY-MM-DD, since the job runs at night there. */
@@ -170,12 +153,13 @@ export async function recordValueSnapshots(now = new Date()): Promise<number> {
 }
 
 /** Removes the snapshots older than the lifetime, and the prices of cards nobody owns any more. */
-export async function purgeOldValueData(now = new Date()): Promise<void> {
+export async function purgeOldValueData(owned: readonly string[], now = new Date()): Promise<void> {
   const oldest = dayOf(new Date(now.getTime() - SNAPSHOT_LIFETIME_DAYS * 24 * 60 * 60 * 1000));
-  await valueSnapshots().deleteMany({ date: { $lt: oldest } });
-  const owned = (await copies().distinct('cardId')) as string[];
-  await prices().deleteMany({ cardId: { $nin: owned } });
-  await priceChecks().deleteMany({ _id: { $nin: owned } });
+  await Promise.all([
+    valueSnapshots().deleteMany({ date: { $lt: oldest } }),
+    prices().deleteMany({ cardId: { $nin: [...owned] } }),
+    priceChecks().deleteMany({ _id: { $nin: [...owned] } }),
+  ]);
 }
 
 /** The value history of an account, oldest first. */

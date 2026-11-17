@@ -1,5 +1,5 @@
 import { isAuthorizedCron } from '../../src/cron-auth.js';
-import { purgeOldValueData, recordValueSnapshots, refreshOwnedPrices } from '../../src/prices.js';
+import { ownedCardIds, purgeOldValueData, recordValueSnapshots, refreshOwnedPrices } from '../../src/prices.js';
 import { purgeExpiredRecords } from '../../src/retention.js';
 
 /** Time left for reading prices, so the snapshots are always recorded before the function is stopped at 60 s. */
@@ -13,8 +13,9 @@ export async function GET(request: Request): Promise<Response> {
   if (!isAuthorizedCron(request)) {
     return Response.json({ error: 'unauthorized' }, { status: 401 });
   }
-  const prices = await refreshOwnedPrices(Date.now() + PRICE_READING_MS);
+  const owned = await ownedCardIds();
+  const prices = await refreshOwnedPrices(owned, Date.now() + PRICE_READING_MS);
   const snapshots = await recordValueSnapshots();
-  await purgeOldValueData();
-  return Response.json({ prices, snapshots, purged: await purgeExpiredRecords() });
+  const [purged] = await Promise.all([purgeExpiredRecords(), purgeOldValueData(owned)]);
+  return Response.json({ prices, snapshots, purged });
 }

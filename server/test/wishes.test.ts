@@ -29,9 +29,8 @@ describe('wishes on the server', { skip: skipWithoutDatabase }, () => {
   });
 
   after(async () => {
-    const { deleteWishes } = await import('../src/wish-store.js');
-    const { deleteCollection } = await import('../src/copies.js');
-    await Promise.all(users.flatMap((id) => [deleteWishes(id), deleteCollection(id)]));
+    const { deleteOwnData } = await import('../src/collections.js');
+    await Promise.all(users.map((id) => deleteOwnData(id)));
     await dbModule.mongoClient.close();
   });
 
@@ -80,7 +79,7 @@ describe('wishes on the server', { skip: skipWithoutDatabase }, () => {
   });
 
   test('refuses a list past the limit and leaves nothing behind', async () => {
-    const { wishlists } = await import('../src/wish-store.js');
+    const { wishlists } = await import('../src/collections.js');
     await wishlists().insertMany(Array.from({ length: 49 }, (_, index) => ({ userId, ...list(`fill-${index}`) })));
     assert.equal(
       await wishes.saveWishlistChange(userId, 'c6', { type: 'create-list', wishlist: list('over') }),

@@ -3,11 +3,7 @@ import { ObjectId } from 'mongodb';
 
 import { clearAccountLimits } from './account-limit.js';
 import { deleteAvatar, readAvatar } from './avatar.js';
-import { copies, deleteCollection } from './copies.js';
-import { deleteWishes, wishes, wishlists } from './wish-store.js';
-
-// The value history, read here without the shared package, like the other data of an account.
-const valueSnapshots = () => db.collection<{ userId: string; date: string; amount: number }>('valueSnapshot');
+import { copies, deleteOwnData, valueSnapshots, wishes, wishlists } from './collections.js';
 import { db } from './db.js';
 
 // The sign in imports this file. It must only import types from the shared package, so that deleting an account keeps
@@ -140,13 +136,7 @@ export async function exportAccountData(userId: string): Promise<AccountExport |
  * needs it. If the deletion then fails, the account can still try it again instead of being locked out.
  */
 export async function eraseBeforeUserDeletion(userId: string): Promise<void> {
-  await Promise.all([
-    deleteAvatar(userId),
-    deleteCollection(userId),
-    deleteWishes(userId),
-    valueSnapshots().deleteMany({ userId }),
-    clearAccountLimits(userId),
-  ]);
+  await Promise.all([deleteAvatar(userId), deleteOwnData(userId), clearAccountLimits(userId)]);
 }
 
 /**

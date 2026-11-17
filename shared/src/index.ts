@@ -9,3 +9,4 @@ export * from './scan.ts';
 export * from './wishlist-change.ts';
 export * from './unreliable-prices.ts';
 export * from './binder.ts';
+export * from './map-limited.ts';

@@ -60,10 +60,10 @@ describe('daily prices and value snapshots', { skip: skipWithoutDatabase }, () =
         pricing: { cardmarket: { updated: '2026-11-17', avg7: holoOnly ? 10 : 1.5 } },
       });
     });
-    const result = await prices.refreshOwnedPrices(Date.now() + 10_000);
+    const result = await prices.refreshOwnedPrices(await prices.ownedCardIds(), Date.now() + 10_000);
     assert.equal(result.failed, 0);
-    const kept = await prices
-      .prices()
+    const { prices: priceCollection } = await import('../src/collections.js');
+    const kept = await priceCollection()
       .find({ cardId: { $in: cards } })
       .toArray();
     assert.deepEqual(kept.map((price) => [price.cardId, price.variant, price.amount]).sort(), [

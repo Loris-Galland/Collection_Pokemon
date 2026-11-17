@@ -7,11 +7,8 @@ import {
 } from '@collection/shared/compiled';
 import type { AnyBulkWriteOperation } from 'mongodb';
 
-import { appliedChanges, copies, type CopyDocument } from './copies.js';
-import { mongoClient } from './db.js';
-import { wishes } from './wish-store.js';
-
-export { deleteCollection } from './copies.js';
+import { applyOnce } from './apply-once.js';
+import { appliedCollectionChanges, copies, wishes, type CopyDocument } from './collections.js';
 
 /** Most copies one account can hold, so that one account cannot fill the free database (512 MB in all). */
 export const MAX_COPIES_PER_ACCOUNT = 10_000;
@@ -41,8 +38,8 @@ function ensureIndexes(): Promise<unknown> {
   indexesReady ??= Promise.all([
     copies().createIndex({ userId: 1, id: 1 }, { unique: true }),
     copies().createIndex({ userId: 1, cardId: 1, variant: 1, language: 1, condition: 1 }, { unique: true }),
-    appliedChanges().createIndex({ userId: 1, changeId: 1 }, { unique: true }),
-    appliedChanges().createIndex({ appliedAt: 1 }, { expireAfterSeconds: APPLIED_CHANGE_LIFETIME_S }),
+    appliedCollectionChanges().createIndex({ userId: 1, changeId: 1 }, { unique: true }),
+    appliedCollectionChanges().createIndex({ appliedAt: 1 }, { expireAfterSeconds: APPLIED_CHANGE_LIFETIME_S }),
   ]).catch((error: unknown) => {
     indexesReady = undefined;
     throw error;
@@ -118,26 +115,18 @@ function duplicateIndex(error: unknown): string | undefined {
 }
 
 /** One try at saving a change. The change and its id are saved together in a transaction, or not at all. */
-async function saveOnce(userId: string, changeId: string, change: CollectionChange): Promise<'saved' | 'full'> {
+function saveOnce(userId: string, changeId: string, change: CollectionChange): Promise<'saved' | 'full'> {
   const added = addedCount(change);
-  const session = mongoClient.startSession();
-  try {
-    return await session.withTransaction(async () => {
-      // Already saved, so the phone sent it again without knowing that the first try had arrived.
-      if (await appliedChanges().findOne({ userId, changeId }, { session, projection: { _id: 1 } })) return 'saved';
-      if (added > 0 && (await copies().countDocuments({ userId }, { session })) + added > MAX_COPIES_PER_ACCOUNT) {
-        return 'full';
-      }
-      await copies().bulkWrite(operationsOf(userId, change), { session });
-      // An owned card is no longer a wish. It leaves the wishes in the same transaction as the copy arrives.
-      const addedCards = addedCardIds(change);
-      if (addedCards.length > 0) await wishes().deleteMany({ userId, cardId: { $in: addedCards } }, { session });
-      await appliedChanges().insertOne({ userId, changeId, appliedAt: new Date() }, { session });
-      return 'saved';
-    });
-  } finally {
-    await session.endSession();
-  }
+  return applyOnce<'full'>(appliedCollectionChanges(), userId, changeId, async (session) => {
+    if (added > 0 && (await copies().countDocuments({ userId }, { session })) + added > MAX_COPIES_PER_ACCOUNT) {
+      return 'full';
+    }
+    await copies().bulkWrite(operationsOf(userId, change), { session });
+    // An owned card is no longer a wish. It leaves the wishes in the same transaction as the copy arrives.
+    const addedCards = addedCardIds(change);
+    if (addedCards.length > 0) await wishes().deleteMany({ userId, cardId: { $in: addedCards } }, { session });
+    return 'saved';
+  });
 }
 
 /**
