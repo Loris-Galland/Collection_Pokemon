@@ -166,6 +166,14 @@ export const fr = {
     copyLabel: '{{name}}, {{variant}}, {{condition}}, {{price}}, quantité {{quantity}}',
   },
   wishlist: {
+    saveErrors: {
+      'too-many-wishes': 'Tu as atteint la limite de 2 000 envies. Retires-en avant d’en ajouter.',
+      'too-many-lists': 'Tu as atteint la limite de 50 listes d’envies.',
+      'signed-out': 'Ta session a expiré. Reconnecte-toi pour envoyer tes envies, elles t’attendent sur ce téléphone.',
+      other: 'Tes envies n’ont pas pu être enregistrées. Réessaie dans un instant.',
+    },
+    unsent_one: '{{count}} modification de tes envies attend le réseau.',
+    unsent_other: '{{count}} modifications de tes envies attendent le réseau.',
     title: 'Envies',
     total: 'Pour tout obtenir',
     costNotice: 'Prix moyens Cardmarket de la variante la moins chère, indicatifs.',
@@ -230,7 +238,8 @@ export const fr = {
   },
   scan: {
     title: 'Scanner',
-    intro: 'Cadre ta carte avec son numéro en bas, puis prends la photo. Tu retrouves sa fiche, son prix et tu peux l’ajouter à ta collection.',
+    intro:
+      'Cadre ta carte avec son numéro en bas, puis prends la photo. Tu retrouves sa fiche, son prix et tu peux l’ajouter à ta collection.',
     introTyping:
       'Tape le numéro imprimé en bas de ta carte pour retrouver sa fiche et son prix. La lecture par photo arrive avec la version de développement de l’application.',
     permission: 'Autorise l’appareil photo pour scanner tes cartes. La photo reste sur ton téléphone.',
@@ -242,7 +251,8 @@ export const fr = {
     choose_other: '{{count}} cartes possibles, choisis la tienne',
     notFound: {
       'no-number': 'Aucun numéro lisible. Rapproche-toi, évite les reflets, ou tape le numéro comme 006/165.',
-      'no-card': 'Aucune carte du catalogue ne porte ce numéro. Vérifie-le, ou cherche la carte par son nom dans le Catalogue.',
+      'no-card':
+        'Aucune carte du catalogue ne porte ce numéro. Vérifie-le, ou cherche la carte par son nom dans le Catalogue.',
       failed: 'La carte n’a pas pu être lue. Réessaie, ou tape son numéro.',
     },
     typeNumber: 'Numéro de la carte',
@@ -380,14 +390,15 @@ export const fr = {
       'Tes requêtes : des compteurs liés à ton compte, qui limitent le nombre de requêtes pour protéger le service.',
     dataCollection:
       'Ta collection : chaque exemplaire (carte, variante, langue, état, quantité) est conservé sur notre serveur, pour que tu le retrouves sur tous tes téléphones. Une copie reste sur ton téléphone pour que tu puisses l’utiliser hors connexion, avec les modifications pas encore envoyées.',
-    dataWishes: 'Tes envies : elles restent pour l’instant sur ton téléphone et ne nous sont pas envoyées.',
+    dataWishes:
+      'Tes listes d’envies et tes envies (carte, liste, date d’ajout), conservées sur notre serveur pour que tu les retrouves sur tous tes téléphones, avec une copie sur ton téléphone pour le hors connexion.',
     whyTitle: 'Pourquoi',
     why: 'Pour te fournir le service que tu demandes en créant un compte (exécution du contrat), et pour protéger les comptes contre les accès frauduleux (intérêt légitime). Nous n’utilisons ni publicité, ni revente, ni outil de suivi.',
     howLongTitle: 'Combien de temps',
     howLongAccount: 'Ton compte : jusqu’à ce que tu le supprimes.',
     howLongPhoto: 'Ta photo de profil : jusqu’à ce que tu la retires ou que tu supprimes ton compte.',
     howLongCollection:
-      'Ta collection : jusqu’à ce que tu retires tes exemplaires ou que tu supprimes ton compte. Chaque modification laisse aussi une trace sans contenu pendant 30 jours, pour qu’elle ne soit jamais enregistrée deux fois.',
+      'Ta collection et tes envies : jusqu’à ce que tu les retires ou que tu supprimes ton compte. Chaque modification laisse aussi une trace sans contenu pendant 30 jours, pour qu’elle ne soit jamais enregistrée deux fois.',
     howLongSessions: 'Tes sessions : elles expirent après 7 jours sans utilisation, puis sont effacées.',
     howLongAttempts: 'Les tentatives de connexion et les compteurs de requêtes : 48 heures au plus.',
     whoTitle: 'Qui y a accès',

@@ -1,5 +1,14 @@
 import { cleanWishlistName, WISHLIST_NAME_MAX_LENGTH } from '@collection/shared';
-import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -131,6 +140,10 @@ function PickerContent({
   const create = () => {
     if (!cleanName) return;
     const id = createWishlist(cleanName);
+    if (!id) {
+      onDone(t('wishlist.saveErrors.too-many-lists'));
+      return;
+    }
     addWish(card.id, card.setId, id);
     onDone(t('wishlist.savedTo', { name: cleanName }));
   };

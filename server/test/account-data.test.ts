@@ -49,6 +49,16 @@ async function seedAccount({ db }: DbModule, name: string) {
     secret: `${name}-two-factor-secret`,
     backupCodes: `${name}-backup-codes`,
   });
+  await db
+    .collection('wishlist')
+    .insertOne({ userId, id: `${name}-list`, name: 'Feu', createdAt: '2026-11-01T10:00:00.000Z' });
+  await db.collection('wish').insertOne({
+    userId,
+    cardId: 'sv03.5-004',
+    setId: 'sv03.5',
+    wishlistId: `${name}-list`,
+    addedAt: '2026-11-01T10:00:00.000Z',
+  });
   await db.collection('avatar').insertOne({ _id: userId as never, image: `${name}-picture` });
   await db.collection('copy').insertOne({
     userId,
@@ -127,6 +137,8 @@ describe('account data', { skip: skipWithoutDatabase }, () => {
           quantity: 2,
         },
       ],
+      wishlists: [{ id: 'ash-list', name: 'Feu', createdAt: '2026-11-01T10:00:00.000Z' }],
+      wishes: [{ cardId: 'sv03.5-004', setId: 'sv03.5', wishlistId: 'ash-list', addedAt: '2026-11-01T10:00:00.000Z' }],
     });
   });
 
@@ -144,9 +156,11 @@ describe('account data', { skip: skipWithoutDatabase }, () => {
       db.collection('avatar').countDocuments({ _id: brock as never }),
       db.collection('copy').countDocuments({ userId: brock }),
       db.collection('appliedCollectionChange').countDocuments({ userId: brock }),
+      db.collection('wishlist').countDocuments({ userId: brock }),
+      db.collection('wish').countDocuments({ userId: brock }),
       db.collection('accountLimit').countDocuments({ _id: { $regex: `^${brock}:` } as never }),
     ]);
-    assert.deepEqual(left, [0, 0, 0, 0, 0]);
+    assert.deepEqual(left, [0, 0, 0, 0, 0, 0, 0]);
     assert.deepEqual(await accountData.exportAccountData(misty), mistyBefore);
     assert.equal(await db.collection('twoFactor').countDocuments({ userId: new ObjectId(misty) }), 1);
   });

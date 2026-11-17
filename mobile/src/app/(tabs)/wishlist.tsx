@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRequireAccount } from '@/features/account/use-account';
 import { WishlistNameSheet } from '@/features/wishlist/wishlist-name-sheet';
+import { WishlistNotice } from '@/features/wishlist/wishlist-notice';
 import { useWishlist, useWishlistActions } from '@/features/wishlist/wishlist-provider';
 import { NewWishlistTile, WishlistTile } from '@/features/wishlist/wishlist-tile';
 import { useWishCards } from '@/features/wishlist/use-wish-cards';
@@ -67,6 +68,8 @@ export default function WishlistScreen() {
           </Text>
           <Text variant="display">{t('wishlist.title')}</Text>
         </Animated.View>
+
+        <WishlistNotice />
 
         {empty ? (
           <Animated.View entering={FadeInDown.springify()} style={styles.empty}>

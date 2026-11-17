@@ -107,7 +107,10 @@ export function applyCollectionChange(copies: readonly Copy[], change: Collectio
     case 'add':
       return addCopy(copies, change.input, () => change.id);
     case 'add-many':
-      return change.entries.reduce<Copy[]>((result, entry) => addCopy(result, entry.input, () => entry.id), [...copies]);
+      return change.entries.reduce<Copy[]>(
+        (result, entry) => addCopy(result, entry.input, () => entry.id),
+        [...copies],
+      );
     case 'set-quantity':
       return setCopyQuantity(copies, change.copyId, change.quantity);
     case 'remove':
@@ -153,7 +156,10 @@ const CATALOG_ID = /^[A-Za-z0-9._!%-]+$/;
 const isId = (value: unknown, format = COPY_ID): value is string =>
   typeof value === 'string' && value.length <= MAX_ID_LENGTH && format.test(value);
 
-const isCatalogId = (value: unknown): value is string => isId(value, CATALOG_ID);
+export const isCatalogId = (value: unknown): value is string => isId(value, CATALOG_ID);
+
+/** Checks an id made on the phone, for a copy, a wishlist or a change. */
+export const isPhoneId = (value: unknown): value is string => isId(value);
 
 const isQuantity = (value: unknown, min: number): value is number =>
   Number.isInteger(value) && (value as number) >= min && (value as number) <= MAX_COPY_QUANTITY;

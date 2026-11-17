@@ -1,9 +1,10 @@
-import type { Copy } from '@collection/shared/compiled';
+import type { Copy, Wish, Wishlist } from '@collection/shared/compiled';
 import { ObjectId } from 'mongodb';
 
 import { clearAccountLimits } from './account-limit.js';
 import { deleteAvatar, readAvatar } from './avatar.js';
 import { copies, deleteCollection } from './copies.js';
+import { deleteWishes, wishes, wishlists } from './wish-store.js';
 import { db } from './db.js';
 
 // The sign in imports this file. It must only import types from the shared package, so that deleting an account keeps
@@ -30,6 +31,8 @@ export interface AccountExport {
   }[];
   avatarJpegBase64: string | null;
   collection: Copy[];
+  wishlists: Wishlist[];
+  wishes: Wish[];
 }
 
 // Better Auth keeps its ids as ObjectId, while our own collections keep them as text.
@@ -64,6 +67,9 @@ const iso = (date: Date) => date.toISOString();
 // The limit of a collection (MAX_COPIES_PER_ACCOUNT), written again because that file imports the shared package. Adds
 // sent at the same moment can pass the limit a little, and this cap keeps the answer under the size Vercel allows.
 const MAX_EXPORTED_COPIES = 10_000;
+// The limits of the wishes, written again for the same reason.
+const MAX_EXPORTED_WISHLISTS = 50;
+const MAX_EXPORTED_WISHES = 2000;
 
 /**
  * The data of an account, or null when it does not exist. Each field is picked one by one, so a field Better Auth adds
@@ -74,13 +80,21 @@ export async function exportAccountData(userId: string): Promise<AccountExport |
   const objectId = new ObjectId(userId);
   const user = await db.collection<UserDocument>('user').findOne({ _id: objectId });
   if (!user) return null;
-  const [accounts, sessions, avatar, collection] = await Promise.all([
+  const [accounts, sessions, avatar, collection, lists, wished] = await Promise.all([
     db.collection<AccountDocument>('account').find({ userId: objectId }).toArray(),
     db.collection<SessionDocument>('session').find({ userId: objectId }).toArray(),
     readAvatar(userId),
     copies()
       .find({ userId }, { projection: { _id: 0, userId: 0 } })
       .limit(MAX_EXPORTED_COPIES)
+      .toArray(),
+    wishlists()
+      .find({ userId }, { projection: { _id: 0, userId: 0 } })
+      .limit(MAX_EXPORTED_WISHLISTS)
+      .toArray(),
+    wishes()
+      .find({ userId }, { projection: { _id: 0, userId: 0 } })
+      .limit(MAX_EXPORTED_WISHES)
       .toArray(),
   ]);
   return {
@@ -107,6 +121,8 @@ export async function exportAccountData(userId: string): Promise<AccountExport |
     })),
     avatarJpegBase64: avatar,
     collection,
+    wishlists: lists,
+    wishes: wished,
   };
 }
 
@@ -115,7 +131,7 @@ export async function exportAccountData(userId: string): Promise<AccountExport |
  * needs it. If the deletion then fails, the account can still try it again instead of being locked out.
  */
 export async function eraseBeforeUserDeletion(userId: string): Promise<void> {
-  await Promise.all([deleteAvatar(userId), deleteCollection(userId), clearAccountLimits(userId)]);
+  await Promise.all([deleteAvatar(userId), deleteCollection(userId), deleteWishes(userId), clearAccountLimits(userId)]);
 }
 
 /**

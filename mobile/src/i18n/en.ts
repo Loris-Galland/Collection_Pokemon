@@ -166,6 +166,14 @@ export const en: Translation = {
     copyLabel: '{{name}}, {{variant}}, {{condition}}, {{price}}, quantity {{quantity}}',
   },
   wishlist: {
+    saveErrors: {
+      'too-many-wishes': 'You have reached the limit of 2,000 wishes. Remove some before adding more.',
+      'too-many-lists': 'You have reached the limit of 50 wishlists.',
+      'signed-out': 'Your session has ended. Sign in again to send your wishes, they are waiting on this phone.',
+      other: 'Your wishes could not be saved. Try again in a moment.',
+    },
+    unsent_one: '{{count}} change to your wishes is waiting for the network.',
+    unsent_other: '{{count}} changes to your wishes are waiting for the network.',
     title: 'Wishes',
     total: 'To get them all',
     costNotice: 'Average Cardmarket prices of the cheapest variant, indicative only.',
@@ -230,7 +238,8 @@ export const en: Translation = {
   },
   scan: {
     title: 'Scan',
-    intro: 'Frame your card with its number at the bottom, then take the photo. You get its page and price, and can add it to your collection.',
+    intro:
+      'Frame your card with its number at the bottom, then take the photo. You get its page and price, and can add it to your collection.',
     introTyping:
       'Type the number printed at the bottom of your card to find its page and price. Reading a photo comes with the development build of the app.',
     permission: 'Allow the camera to scan your cards. The photo stays on your phone.',
@@ -377,14 +386,15 @@ export const en: Translation = {
       'Your requests. Counters tied to your account, which limit the number of requests to protect the service.',
     dataCollection:
       'Your collection. Each copy (card, variant, language, condition, quantity) is kept on our server, so you find it on all your phones. A copy of it stays on your phone so you can use it offline, along with the changes not sent yet.',
-    dataWishes: 'Your wishes. For now they stay on your phone and are not sent to us.',
+    dataWishes:
+      'Your wishlists and wishes (card, list, date added), kept on our server so you find them on all your phones, with a copy on your phone for offline use.',
     whyTitle: 'Why',
     why: 'To provide the service you ask for by creating an account (performance of a contract), and to protect accounts against fraudulent access (legitimate interest). We use no advertising, no data resale and no tracking tool.',
     howLongTitle: 'How long',
     howLongAccount: 'Your account. Until you delete it.',
     howLongPhoto: 'Your profile picture. Until you remove it or delete your account.',
     howLongCollection:
-      'Your collection. Until you remove your copies or delete your account. Each change also leaves a trace with no content for 30 days, so that it is never saved twice.',
+      'Your collection and wishes. Until you remove them or delete your account. Each change also leaves a trace with no content for 30 days, so that it is never saved twice.',
     howLongSessions: 'Your sessions. They expire after 7 days without use, then are erased.',
     howLongAttempts: 'Sign in attempts and request counters. 48 hours at most.',
     whoTitle: 'Who can access it',

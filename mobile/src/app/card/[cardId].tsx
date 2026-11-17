@@ -12,6 +12,7 @@ import { CollectionNotice } from '@/features/collection/collection-notice';
 import { useCopies } from '@/features/collection/collection-provider';
 import { CopyRow } from '@/features/collection/copy-row';
 import { WishButton } from '@/features/wishlist/wish-button';
+import { WishlistNotice } from '@/features/wishlist/wishlist-notice';
 import { useWishlist } from '@/features/wishlist/wishlist-provider';
 import { formatEuros } from '@/lib/format';
 import { StateView, Text, Toast, colors, radius, spacing, useToast } from '@/ui';
@@ -92,6 +93,7 @@ export default function CardScreen() {
         </View>
 
         <CollectionNotice />
+        <WishlistNotice />
 
         {ownedCopies.length > 0 && (
           <View style={styles.owned}>

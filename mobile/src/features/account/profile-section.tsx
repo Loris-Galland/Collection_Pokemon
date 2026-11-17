@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Share, StyleSheet, View } from 'react-native';
 
-import { useWishlist } from '@/features/wishlist/wishlist-provider';
 import { Button, Text, TextField, colors, radius, spacing } from '@/ui';
 
 import { authClient } from './auth-client';
@@ -71,11 +70,10 @@ export function ProfileSection({ user }: { user: ProfileUser }) {
 
 /**
  * Gives the user a copy of their data, as JSON, through the share sheet of the phone. It comes from the server, so it
- * holds everything kept there, and the wishes are added from the phone, where they still live.
+ * holds everything kept there, the collection and the wishes included.
  */
 export function ExportSection() {
   const { t } = useTranslation();
-  const { wishlists, wishes } = useWishlist();
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -86,8 +84,6 @@ export function ExportSection() {
       const data = {
         exportedAt: new Date().toISOString(),
         ...(await fetchAccountExport()),
-        wishlists,
-        wishes,
       };
       await Share.share({ title: t('account.exportTitle'), message: JSON.stringify(data, null, 2) });
     } catch {

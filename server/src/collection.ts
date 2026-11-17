@@ -9,6 +9,7 @@ import type { AnyBulkWriteOperation } from 'mongodb';
 
 import { appliedChanges, copies, type CopyDocument } from './copies.js';
 import { mongoClient } from './db.js';
+import { wishes } from './wish-store.js';
 
 export { deleteCollection } from './copies.js';
 
@@ -101,6 +102,14 @@ function operationsOf(userId: string, change: CollectionChange): AnyBulkWriteOpe
 const addedCount = (change: CollectionChange) =>
   change.type === 'add' ? 1 : change.type === 'add-many' ? change.entries.length : 0;
 
+/** The cards a change adds copies of. */
+const addedCardIds = (change: CollectionChange): string[] =>
+  change.type === 'add'
+    ? [change.input.cardId]
+    : change.type === 'add-many'
+      ? [...new Set(change.entries.map((entry) => entry.input.cardId))]
+      : [];
+
 /** The unique index a write broke, or undefined when the error is not a duplicate key. */
 function duplicateIndex(error: unknown): string | undefined {
   const details = error as { code?: number; message?: string } | undefined;
@@ -120,6 +129,9 @@ async function saveOnce(userId: string, changeId: string, change: CollectionChan
         return 'full';
       }
       await copies().bulkWrite(operationsOf(userId, change), { session });
+      // An owned card is no longer a wish. It leaves the wishes in the same transaction as the copy arrives.
+      const addedCards = addedCardIds(change);
+      if (addedCards.length > 0) await wishes().deleteMany({ userId, cardId: { $in: addedCards } }, { session });
       await appliedChanges().insertOne({ userId, changeId, appliedAt: new Date() }, { session });
       return 'saved';
     });
